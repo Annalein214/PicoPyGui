@@ -44,8 +44,8 @@ class CentralWidget(MyGui.QWidget):
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.update_progressbar)
         self.timer.start(1000)
-
-        #self.daq.finished.connect(self.stopMeasurement) TODO
+        # after the thread of the daq is finished, the measurement should be stopped!
+        self.daq.finished.connect(self.stopMeasurement) 
 
     def leftSide(self):
         # left side will comprise the plot
@@ -136,7 +136,8 @@ class CentralWidget(MyGui.QWidget):
             self.stopMeasurement()
 
     def stopMeasurement(self):
-        # this is executed twice when stopping a run somehow!!
+        # this is executed twice when stopping a run somehow
+        # but appart from the log print, the rest is not executed twice
 
         self.log.debug("Stopping measurement...")
 
@@ -148,6 +149,7 @@ class CentralWidget(MyGui.QWidget):
             while self.daq.isRunning():
                 time.sleep(0.1)
             self.log.debug("Measurement stopped.")
+            '''
             if self.daq.saveMeasurement:
                 self.daq.saveAll()
                 #self.daq.writeToDatenbank()
@@ -167,6 +169,7 @@ class CentralWidget(MyGui.QWidget):
                 else:
                     self.daq.deleteDir()
                     self.log.info("Measurement not saved.")
+            '''
         if self.button.text()=="Stop":
             self.button.setText('Start')
             self.log.debug("Stop Measurement: Measurement button set to start.")

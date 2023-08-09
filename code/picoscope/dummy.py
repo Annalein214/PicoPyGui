@@ -85,3 +85,36 @@ class dummyScope():
         else:
             dt = (timebase - 2.) / 125000000. ## obi change to 3000 D
         return dt
+
+    def setSamplingFrequency(self, sampleFreq, noSamples, oversample=0, segmentIndex=0):
+        sampleInterval = 1.0 / sampleFreq
+        duration = noSamples * sampleInterval
+        self.timebase = self.getTimeBaseNum(sampleInterval) # 2.0 fuer 1.0ns interval
+        timebase_dt = self.getTimestepFromTimebase(self.timebase) # 8e-10 fuer 1.0ns interval
+        noSamples = int(round(duration / timebase_dt))
+
+        sampleRate=sampleFreq
+        self.sampleInterval=sampleRate / 1.0E9
+        self.maxSamples=0
+
+        # remove changing the nosample -> no this is only to save them into class attribute, do not remove this line
+        self.noSamples =noSamples
+        self.sampleRate = 1.0 / self.sampleInterval
+        
+        return (self.sampleRate, self.maxSamples, noSamples)
+
+    def memorySegments(self, noSegments):
+        self.maxSamples=0
+        return self.maxSamples
+
+    def setNoOfCaptures(self, noCaptures):
+        pass
+
+    def setChannel(self,channel='A', coupling="AC", VRange=2.0, VOffset=0.0, enabled=True,
+                   BWLimited=False, probeAttenuation=1.0):
+        return VRange
+
+    def setSimpleTrigger(self, trigSrc, threshold_V=0, direction="Rising", delay=0, timeout_ms=100,
+                         enabled=True):
+
+        return True

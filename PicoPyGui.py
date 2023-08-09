@@ -99,7 +99,7 @@ if __name__ == '__main__':
     os.makedirs(opts.directory, exist_ok=True)
 
     # start logging, set logging level
-    log=log(save=True, level="info", directory=opts.directory)
+    log=log(save=True, level="debug", directory=opts.directory)
     log.debug("Arguments:"+" ".join(sys.argv))
 
     # make it so!

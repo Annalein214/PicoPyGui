@@ -3,7 +3,7 @@
 ##########################################################################################
 # small stuff
 
-import platform
+import platform, time
 
 if platform.system() == 'Linux' or platform.system()=="Darwin": # linux and mac
     red='\033[31;1m' # for errors
@@ -22,7 +22,12 @@ else:
     blue=''
     nc=''
 
+
+
 ##########################################################################################
+def timestring_humanReadable(t): # input given by time.time()
+    s=time.localtime(float(t))
+    return "%4d_%02d_%02d_%02d_%02d_%02d" % (s.tm_year,s.tm_mon,s.tm_mday,s.tm_hour,s.tm_min,s.tm_sec)
 
 
 ##########################################################################################

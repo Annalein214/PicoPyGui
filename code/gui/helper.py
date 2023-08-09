@@ -39,8 +39,11 @@ def getValueSelect(obj):
 def getTextInput(obj):
     return str(obj.text())
 
-def getCheckboxValue(obj):
+def getCheckboxValue(obj): # get text!! not if checked!
     return str(obj.text())
+
+def getCheckboxEnabled(obj):
+    return bool(obj.isChecked())
 
 # ----- Set Value ----------------------------------
 
@@ -49,3 +52,23 @@ def setText(box,value):
 
 def setCheckbox(box, value):
     box.setChecked(bool(value))
+
+def setSelect(box, value):
+    index = box.findText(value, QtCore.Qt.MatchFixedString)
+    if index >= 0:
+         box.setCurrentIndex(index)        
+    return box
+
+## ----- Create Value ----------------------------------
+
+def recreateSelect(options, box, default):
+    for entry in options:
+        select.addItem(entry)
+    index = select.findText(default, QtCore.Qt.MatchFixedString)
+    if index >= 0:
+         select.setCurrentIndex(index)        
+
+# ----- Clear ----------------------------------
+
+def clearSelect(box):
+    box.clear()

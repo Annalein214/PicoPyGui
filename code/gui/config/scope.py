@@ -94,7 +94,10 @@ class scopeConfigWidget(MyGui.QWidget):
                                        en,
                                        self.updateChEn)
             self.chEnabled.append(wid)
-       
+        # --- Measurement time
+        labelTime = createLabel("Measurement time [min]")
+        self.chooseTime=createTextInput(self.daq.measurementduration, self.updateTime)
+
         # -------------------------------------------------
         # compose the layout
 
@@ -135,13 +138,29 @@ class scopeConfigWidget(MyGui.QWidget):
         for entry in self.chEnabled:
             c+=1
             grid.addWidget(entry,            c,1)  
-        
+        c+=1
+        grid.addWidget(labelTime,         c,0) 
+        grid.addWidget(self.chooseTime,   c,1)
 
         wrapperLayout.addLayout(grid)
         wrapperLayout.addStretch()
 
     # ********************************************************************************
     # Update functions
+
+    def updateTime(self):
+
+        duration = str(self.chooseTime.text())
+        if duration=="": duration=0
+        try:
+            duration=int(duration)
+        except ValueError as e:
+            self.log.error("Could not convert string to int %s"%duration)
+            duration=0
+            setText(self.chooseTime,"0")
+        self.daq.measurementduration=duration
+        self.settings.saveSetting("measurementduration", self.daq.measurementduration)
+ 
 
     def updateFrequency(self):
         freq = str(getTextInput(self.chooseFreq))

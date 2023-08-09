@@ -3,7 +3,6 @@ MyGui=QtWidgets
 
 from code.gui.helper import *
 
-
 class channelConfigWidget(MyGui.QWidget):
     '''
     The master of the channel config widgets
@@ -31,7 +30,7 @@ class channelConfigWidget(MyGui.QWidget):
                 default=entry["rangeStr"]
         self.chooseVoltage=createSelect(options, default, self.updateVoltage)
 
-        # --- Voltage ---
+        # --- Coupling ---
         labelCoupling = createLabel("Coupling")
         self.chooseCoupling=createSelect(self.daq.scope.CHANNEL_COUPLINGS,          
                                          self.daq.coupling[self.channel], 
@@ -47,6 +46,33 @@ class channelConfigWidget(MyGui.QWidget):
         self.maxOffset = createLabel(str(int(self.daq.scope.maxOffset(self.daq.coupling[self.channel], self.daq.voltagerange[self.channel]))
 ))
 
+        # --- Analysis ------
+        labelAdj= createLabel("Save:")
+        self.chooseWfm=createCheckbox("Waveform (data heavy!)", # don't change name, it is processed elsewhere
+                            self.daq.save_wfm[self.channel],
+                            self.updateAnalysis)
+        labelWFMnbr= createLabel("Number of Waveforms to save")
+        self.chooseWfmNbr=createTextInput(self.daq.save_wfm_nbr[self.channel], self.updateAnalysis)
+        self.chooseMaxAmp=createCheckbox("Max. Amplitude", # don't change name, it is processed elsewhere
+                            self.daq.save_max_amp[self.channel],
+                            self.updateAnalysis)
+        self.chooseMinAmp=createCheckbox("Min. Amplitude", # don't change name, it is processed elsewhere
+                            self.daq.save_min_amp[self.channel],
+                            self.updateAnalysis)
+        self.chooseMaxArea=createCheckbox("Area above baseline", # don't change name, it is processed elsewhere
+                            self.daq.save_area[self.channel],
+                            self.updateAnalysis)
+        self.chooseAvgStd=createCheckbox("Average, standard deviation", # don't change name, it is processed elsewhere
+                            self.daq.save_avg_std[self.channel],
+                            self.updateAnalysis)
+        self.chooseFFT=createCheckbox("Simple FFT (data+CPU heavy!)", # don't change name, it is processed elsewhere
+                            self.daq.save_fft[self.channel],
+                            self.updateAnalysis)
+        labelFFTnbr= createLabel("Number of FFT to save")
+        self.chooseFFTNbr=createTextInput(self.daq.save_fft_nbr[self.channel], self.updateAnalysis)
+
+        labelNbrHint = createLabel("If you choose 0 waveforms or \nfft to save, all will be saved. \nThis is very data/CPU heavy!")
+
         # -------------------------------------------------
         # compose the layout
         c=0
@@ -61,12 +87,60 @@ class channelConfigWidget(MyGui.QWidget):
         c+=1
         grid.addWidget(labelMaxOffset,           c,0) 
         grid.addWidget(self.maxOffset,     c,1) 
-        
+        c+=1
+        grid.addWidget(labelAdj,             c,0)
+        c+=1
+        grid.addWidget(self.chooseWfm,             c,1)
+        c+=1
+        grid.addWidget(labelWFMnbr,             c,0)
+        grid.addWidget(self.chooseWfmNbr,             c,1)
+
+        c+=1
+        grid.addWidget(self.chooseMaxAmp,             c,1)
+        c+=1
+        grid.addWidget(self.chooseMinAmp,             c,1)
+        c+=1
+        grid.addWidget(self.chooseMaxArea,             c,1)
+        c+=1
+        grid.addWidget(self.chooseAvgStd,             c,1)
+        c+=1
+        grid.addWidget(self.chooseFFT,             c,1)
+        c+=1
+        grid.addWidget(labelFFTnbr,             c,0)
+        grid.addWidget(self.chooseFFTNbr,             c,1)
+        c+=1
+        grid.addWidget(labelNbrHint,             c,1)
+        c+=1
+
+        #---
         wrapperLayout.addLayout(grid)
         wrapperLayout.addStretch()
 
     # ********************************************************************************
     # Update functions
+
+    def updateAnalysis(self):
+        self.daq.save_wfm[self.channel]=getCheckboxEnabled(self.chooseWfm)
+        self.daq.save_max_amp[self.channel]=getCheckboxEnabled(self.chooseMaxAmp)
+        self.daq.save_min_amp[self.channel]=getCheckboxEnabled(self.chooseMinAmp)
+        self.daq.save_area[self.channel]=getCheckboxEnabled(self.chooseMaxArea)
+        self.daq.save_avg_std[self.channel]=getCheckboxEnabled(self.chooseAvgStd)
+        self.daq.save_fft[self.channel]=getCheckboxEnabled(self.chooseFFT)
+
+        self.settings.saveSetting("save_wfm."+self.channel, self.daq.save_wfm[self.channel])
+        self.settings.saveSetting("save_max_amp."+self.channel, self.daq.save_max_amp[self.channel])
+        self.settings.saveSetting("save_min_amp."+self.channel, self.daq.save_min_amp[self.channel])
+        self.settings.saveSetting("save_area."+self.channel, self.daq.save_area[self.channel])
+        self.settings.saveSetting("save_avg_std."+self.channel, self.daq.save_avg_std[self.channel])
+        self.settings.saveSetting("save_fft."+self.channel, self.daq.save_fft[self.channel])
+
+        self.daq.save_wfm_nbr[self.channel]=int(getTextInput(self.chooseWfmNbr))
+        self.daq.save_fft_nbr[self.channel]=int(getTextInput(self.chooseFFTNbr))
+
+        self.settings.saveSetting("save_wfm_nbr."+self.channel, self.daq.save_wfm_nbr[self.channel])
+        self.settings.saveSetting("save_fft_nbr."+self.channel, self.daq.save_fft_nbr[self.channel])
+
+
 
     def updateOffsetHint(self):
         maxOffset=int(self.daq.scope.maxOffset(self.daq.coupling[self.channel], self.daq.voltagerange[self.channel]))
