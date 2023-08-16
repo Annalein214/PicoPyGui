@@ -351,13 +351,13 @@ class plotWidget(FigureCanvas):
                 if "Area" in mode: 
                     xUnit2+="* sec"
                     # adjust unit so that you get more reasonable values
-                    if np.max(values)<1.e3:
+                    if np.max(values)<0:
                         values*=1000
                         xUnit2+="* ms"
-                    if np.max(values)<1.e3:
+                    if np.max(values)<0:
                         values*=1000
                         xUnit2+="* μs"
-                    if np.max(values)<1.e3:
+                    if np.max(values)<0:
                         values*=1000
                         xUnit2+="* ns"
 

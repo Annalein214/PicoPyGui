@@ -1,356 +1,93 @@
-from code.helpers import timestring_humanReadable, dateTime_plusHours, dateTime
-
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-import math
+import math, os, traceback
+from glob import glob
+plt.rc('xtick', labelsize=5)
+plt.rc('ytick', labelsize=5)
 
-class plot:
+from code.helpers import timestring_humanReadable, dateTime_plusHours, dateTime
 
-    def __init__(self,log,daq,hw, settings):
+
+class hourlyPlot:
+
+    def __init__(self, log):
+        
         self.log=log
-        self.daq=daq
-        self.hw=hw
-        self.settings=settings
-
-##########################################################################################
-
+        self.log.debug("Init hourlyPlot")
     def plotAll(self):
-        # collect what will be plotted in which way
 
-        
-        # count
-        wfmNbr=0; histNbr=0; timeNbr=0; fftNbr=0
-        for i in range(self.daq.scope.NUM_CHANNELS):
-            channel=list(self.daq.scope.CHANNELS)[i][0]
-            if self.settings.channelEnabled[channel]:
-                if self.settings.save_wfm[channel]:
-                    wfmNbr+=1
-                if self.settings.save_max_amp[channel]:
-                    histNbr+=1
-                if self.settings.save_min_amp[channel]:
-                    histNbr+=1            
-                if self.settings.save_area[channel]:
-                    histNbr+=1
-                if self.settings.save_avg_std[channel]:
-                    histNbr+=2
-                    timeNbr+=2
-                if self.settings.save_fft[channel]:
-                    fftNbr+=1
+        self.log.debug("HourlyPlot: plotAll")
+
+        try:# wrap so that this does not disturb normal operation
+            dyrs=sorted(os.listdir("./data/"))
+            hrtime=dyrs[-1] # starttime human readable
+            self.directory="./data/"+hrtime
+            self.outfile="./data/"+hrtime+"/"+hrtime+".out"
+            #print("Directory",self.directory)
             
-        # HWT: add your hardware here
-        if self.settings.useDummy:
-            timeNbr+=1
+            # get round from file name of a file which always exists
+            tfyles=sorted(glob(self.directory+"/Time_*.npy"))
+            runde = int(tfyles[-1].split("/")[-1].split(".")[0].split("_")[-1])
+            #print("hourlyPlot, runde", runde)
 
-        #IndisposedTimes
-        histNbr+=1
+            # get starttime from out file
+            with open(self.outfile) as f:
+                for line in f:
+                    if "Starttime" in line:
+                        unixtime=float(line.split(":")[-1].strip().split(" ")[0])
+                    if "Sampling Rate" in line and "Interval" in line:
+                        # Sampling Rate: %e Hz; Samples %e; MaxSamples %e; Interval %e ns
+                        interval=int(float(line.split(";")[-1].strip().split(" ")[1])) # ns
 
-        #triggerrate
-        histNbr+=1
-        timeNbr+=1
+            # get the time as this is shared by many variables
+            time = np.load(self.directory+"/Time_"+str(runde)+".npy") 
+            time-=unixtime
+            time/=60. # convert to minutes
 
-        #self.timewise(timeNbr)
-        #self.histogram(histNbr)
-        self.waveform(wfmNbr)
-        
+            # if exists, get the time from TimeHW_* for the external hardware
+            # check if file exists
+            if os.path.isfile(self.directory+"/TimeHW_"+str(runde)+".npy"):
+                timeHW = np.load(self.directory+"/TimeHW_"+str(runde)+".npy") 
+                timeHW-=unixtime
+                timeHW/=60.
 
-##########################################################################################
+            # get all npy files
+            nbr=0 # count time plots
+            files = sorted(glob(self.directory+"/*_"+str(runde)+".npy"))
+            for fyle in files:
+                if "Triggerrate" in fyle or \
+                   "avg" in fyle or \
+                   "std" in fyle:
+                   self.plotTime(time, fyle, runde, unixtime)
+                   nbr+=1
+                if "HW_" in fyle[:3]:
+                   self.plotTime(timeHW, fyle, runde, unixtime)
+                if "waveform" in fyle:
+                    self.plotWaveform(fyle, runde, unixtime, interval)
+                if "Triggerrate" in fyle or \
+                   "max" in fyle or \
+                   "min" in fyle or \
+                   "area" in fyle or \
+                   "avg" in fyle or \
+                   "std" in fyle:
+                   self.plotHistogram(fyle, runde, unixtime)
+            self.allTimePlot(files, nbr, time, runde, unixtime)
+        except Exception as e: 
+            traceback.print_exc()
+            self.log.error("PlotAll failed with error %s" %str(e))
 
-    def waveform(self, total):
-        '''
-        hourly plots of waveform data
-        only plot a subset of available waveforms
-        '''
-        print("Plot waveform")
+    # --------------------------------------------------------------------------------
 
-        
-        # SF save until here
-        # prepare plot
-        rows=math.ceil(math.sqrt(total)); cols=math.ceil(total/rows)
-        fig = plt.figure("Name", figsize=(3*cols,2*rows)) 
-        axes=[]
-        # SF save until here
-        
-        for i in range(total):
-            if i<rows:
-                r=i; c=0
-            else:
-                r=i%rows; c=i//rows
-            #print(i,r,c)
-            axes.append(plt.subplot2grid((rows,cols), (r,c)))
-            axes[i].grid(True)
-        '''
+    def allTimePlot(self,files,total, time, runde, unixtime):
 
-        plotI=0
-        for i in range(self.daq.scope.NUM_CHANNELS):
-            channel=list(self.daq.scope.CHANNELS)[i][0]
-            if daq.scope.channelEnabled[channel]:
-                if self.settings.save_wfm[channel]:
-                    self.wfmPlot(channel, axes[plotI])
-                    plotI+=1
-        
-        fig.suptitle("Waveform examples for Round %d. \nStart of measurement: %s. \nStart of this round: %s" %(self.daq.rounds, str(dateTime(self.daq.startthread)), str(dateTime_plusHours(self.daq.startthread, self.daq.rounds))))
+        self.log.debug("allTimePlot %d"% total)
 
-        fig.subplots_adjust(top=0.75,
-                            wspace=0.5, 
-                            hspace=0.6, # space vertically
-                            )
-        '''
-        filename=self.daq.directory+"/Waveforms_"+str(self.daq.rounds)+".pdf"
-        fig.savefig(filename, bbox_inches='tight')
-        fig.clf()
-        fig.clear()
-        # SF save until here
-        
-
-    def wfmPlot(self,channel, ax):
-        '''
-        helper
-        '''
-        print("Plot waveform helper", channel)
-
-        # get y-Axis values
-        values=np.array(self.daq.wfm[channel])
-
-        if len(values)==0:
-            return
-
-        fakearray=np.arange(0,len(values),1)
-        index=np.random.choice(fakearray, size=min(len(values), 20), replace=False)
-        waveforms=values[index]
-
-        unit="V"
-        vRange=self.settings.voltagerange[channel]
-        offSet=self.settings.offset[channel]/1000
-        triggervoltage=self.settings.triggervoltage/1000
-        if vRange < 1: # for convenience change to mV 
-            unit="mV"
-            vRange*=1000
-            offSet*=1000
-            triggervoltage*=1000
-            waveforms*=1000
-
-        xUnit = "sec"
-        time = np.arange(0, len(values[0]), 1) * self.daq.interval
-        if self.daq.interval < 1.e6: 
-            time *= 1.e9
-            xUnit = "ns"
-        elif self.daq.interval < 1.e3:
-            time *= 1.e6
-            xUnit = "μs"
-        elif self.daq.interval < 1:
-            time *= 1.e3
-            xUnit = "ms"
-
-
-        # plot
-        for waveform in waveforms:
-            ax.plot(time, waveform, "-", linewidth=1, markersize=1, alpha=0.3, color="C0")
-        ax.set_ylabel("Amplitude / %s" % unit)
-        ax.set_xlabel("Time / %s" % xUnit)
-        ax.set_title("Ch.%s" % channel, loc="left", pad=3, weight="bold")
-
-        # I got a segmentation fault
-
-##########################################################################################
-
-    def histogram(self, total):
-
-        '''
-        hourly / end plot of timewise variables
-        all plotted into the same plot
-        '''
-
-        print("Plot histogram")
-
-        # prepare plot
-        rows=math.ceil(math.sqrt(total)); cols=math.ceil(total/rows)
-        #print(rows, cols)
-        fig = plt.figure("Name", figsize=(4*cols,2*rows)) 
-        axes=[]
-        for i in range(total):
-            if i<rows:
-                r=i; c=0
-            else:
-                r=i%rows; c=i//rows
-            #print(i,r,c)
-            axes.append(plt.subplot2grid((rows,cols), (r,c)))
-            axes[i].grid(True)
-
-        # slowly go through all subplots with this variable
-        plotI = 0
-
-        # --------------------------------
-        # get values and plot them
-
-        # --- triggerrate ---
-        values=self.daq.rate
-        xlabel="Rate / Hz" # dont change name! needed in histplot
-        #print(plotI,xlabel, len(values))
-        self.histPlot(axes[plotI], values, xlabel)
-        plotI+=1
-
-        # --- indisposedTimes ---
-        values=self.daq.indisposedTimes
-        xlabel="IndisposedTimes / ?"
-        #print(plotI,xlabel, len(values))
-        self.histPlot(axes[plotI], values, xlabel)
-        plotI+=1
-
-        for i in range(self.daq.scope.NUM_CHANNELS):
-            channel=list(self.daq.scope.CHANNELS)[i][0]
-            if self.settings.channelEnabled[channel]:
-                # --- Amplitude --- 
-                if self.settings.save_max_amp[channel]:
-                    values = self.daq.max_amp[channel]
-                    xlabel="Max. Ampl. Ch.%s" % channel
-                    #print(plotI,xlabel, len(values))
-                    self.histPlot(axes[plotI], values, xlabel, channel=channel)
-                    plotI+=1
-
-                # --- Amplitude --- 
-                if self.settings.save_min_amp[channel]:
-                    values = self.daq.min_amp[channel]   
-                    xlabel="Min. Ampl. Ch.%s" % channel
-                    #print(plotI,xlabel, len(values))
-                    self.histPlot(axes[plotI], values, xlabel, channel=channel)
-                    plotI+=1
-                
-                # --- Area ---        
-                if self.settings.save_area[channel]:
-                    
-                    values=self.daq.area[channel]
-                    xlabel="Area Ch.%s" % channel
-                    #print(plotI,xlabel, len(values))
-                    self.histPlot(axes[plotI], values, xlabel, channel=channel)
-                    plotI+=1
-
-                if self.settings.save_avg_std[channel]:
-                    # --- Average ---
-                    values=self.daq.avg[channel]
-                    xlabel="Average Ch.%s" % channel
-                    #print(plotI,xlabel, len(values))
-                    self.histPlot(axes[plotI], values, xlabel, channel=channel)
-                    plotI+=1
-
-                    # --- std ---
-                    values=self.daq.std[channel]
-                    xlabel="Std.Dev. Ch.%s" % channel
-                    #print(plotI,xlabel, len(values))
-                    self.histPlot(axes[plotI], values, xlabel, channel=channel)
-                    plotI+=1
-
-        # --------------------------------
-        # finalize
-
-        fig.suptitle("Histograms for Round %d. \nStart of measurement: %s. \nStart of this round: %s" %(self.daq.rounds, str(dateTime(self.daq.startthread)), str(dateTime_plusHours(self.daq.startthread, self.daq.rounds))))
-
-        fig.subplots_adjust(top=0.85,
-                            wspace=0.5, 
-                            hspace=0.3, # space vertically
-                            )
-        filename=self.daq.directory+"/Histwise_"+str(self.daq.rounds)+".pdf"
-        fig.savefig(filename, bbox_inches='tight')
-        fig.clf()
-        fig.clear()
-
-    def histPlot(self,ax, values, xlabel, channel=None):
-        '''
-        helper 
-        '''
-
-        print("Histogram helper", xlabel, len(values))
-        values=np.array(values)
-        if len(values)>0:
-            values= np.hstack(values)
-        else:
-            self.log.error("No values in array of %s for histogram"%xlabel)
-            print(xlabel, "no values")
-            return
-
-        if channel!=None:
-            unit="V"
-            vRange=self.settings.voltagerange[channel]
-            offSet=self.settings.offset[channel]/1000
-            triggervoltage=self.settings.triggervoltage/1000
-            if vRange < 1: # for convenience change to mV 
-                unit="mV"
-                vRange*=1000
-                offSet*=1000
-                triggervoltage*=1000
-                values*=1000
-
-        unit2=""
-        if "Area" in xlabel: 
-            unit2+="* sec"
-            # adjust unit so that you get more reasonable values
-            if np.max(values)<0:
-                values*=1000
-                unit2="* ms"
-            if np.max(values)<0:
-                values*=1000
-                unit2="* μs"
-            if np.max(values)<0:
-                values*=1000
-                unit2="* ns"
-
-        if "Amp" in xlabel:
-            xBorders=(-vRange+offSet,vRange+offSet)
-        else:
-            mi=np.min(values)
-            ma=np.max(values)
-            xBorders=(mi-0.1*(ma-mi),ma+0.1*(ma-mi))
-
-        bins=int(len(values)*0.1) # reduce number of bins to account for few values
-        if bins<10: bins=10 # at least 10 bins
-        bins=min(50,bins) # max 50 bins
-        binning=[ i*float((xBorders[1]-xBorders[0]))/bins+xBorders[0] for i in range(bins+1)]
-        binwidth=binning[1]-binning[0]
-        histvals, binedges = np.histogram(values, bins=binning)
-
-        # plot
-        ax.bar(binedges[:-1], histvals, binwidth*0.9, facecolor="C0", edgecolor="C0")
-        if xBorders[0]!=xBorders[1]: # only issue at the first round
-            ax.set_xlim(xBorders[0],xBorders[1])
-
-        if self.settings.triggerchannel == channel and \
-           "Amp" in xlabel:
-            ax.axvline(triggervoltage, color="red", 
-                       linewidth=1., label="Trigger") 
-            ax.legend(  loc="best",
-                        frameon=False, 
-                        borderaxespad=0.,
-                        prop={'size': 6})
-
-        try: ax.set_yscale("log")
-        except: pass
-
-        ax.set_ylabel("Counts", fontsize=12)
-        if channel!=None:
-            ax.set_xlabel("%s / %s %s" % (xlabel,unit,unit2), fontsize=12)
-        else:
-            ax.set_xlabel("%s" % (xlabel), fontsize=12)
-
-##########################################################################################
-
-    def timePlot(self,ax, xvalues, yvalues, ylabel):
-        print("TimePlot helper", ylabel, len(xvalues), len(yvalues))
-        if len(xvalues)!=len(yvalues):
-            self.log.error("Timeplot for %s: len of x and y values does not match. Cannot plot them. %d %d"%(ylabel,len(xvalues), len(yvalues)))
-        else:
-            ax.plot(xvalues, yvalues, "-o", linewidth=1, markersize=1, alpha=0.7)
-            ax.set_ylabel(ylabel)
-
-    def timewise(self, total):
-        '''
-        hourly / end plot of timewise variables
-        all plotted into the same plot
-        '''
-        print("Plot timewise")
-
-        # prepare plot
-        fig = plt.figure("Name", figsize=(12,2*total)) 
-        axes= [plt.subplot2grid((total,1), (0, 0))]
+        fig = plt.figure("Name", figsize=(3,10), dpi=300)
+        axes = [plt.subplot2grid((total,1), (0, 0))]
         axes[0].grid(True)
+        plt.setp(axes[0].get_xticklabels(), visible=False)
         for i in range(total-1):
             axes.append(plt.subplot2grid((total,1), (i+1,0), sharex=axes[0]))
             axes[i+1].grid(True)
@@ -358,57 +95,255 @@ class plot:
                 plt.setp(axes[i+1].get_xticklabels(), visible=False)
 
 
-        # slowly go through all subplots with this variable
-        plotI = 0
+        i=0
+        for fylename in files:
+            if "Triggerrate" in fylename or \
+               "avg" in fylename or \
+               "std" in fylename:
 
-        # get x-Axis values
-        time=(np.array(self.daq.time) - self.daq.startthread) / 60
-        timeHW=(np.array(self.hw.time) - self.daq.startthread) / 60 # from unix time to minutes since measurement started
+                data=np.load(fylename)
+                c=fylename.split("/")[-1].split(".")[0].split("_")
+                if len(c)>=3:
+                    channel=c[0] # A, B, ..., HW
+                    mode=c[1]
+                else:
+                    channel="" # only for triggerrate
+                    mode=c[0]
 
-        # --------------------------------
-        # get y-Axis values and plot them
+                if "Triggerrate" in mode: 
+                    yUnit="Hz"
+                    ma=np.max(data)
+                    mi=np.min(data)
+                    if min(ma, -mi) > 1000:
+                        yUnit="kHz"
+                        data/=1000
+                elif "HW" in channel:
+                    yUnit="?"
+                    # HWT adjust unit
+                else: 
+                    yUnit="V"
+                    ma=np.max(data)
+                    mi=np.min(data)
+                    if max(ma, -mi) < 1:
+                        yUnit="mV"
+                        data*=1000
 
-        # --- triggerrate ---
-        values=self.daq.rate
-        ylabel="Rate / Hz"
-        self.timePlot(axes[plotI], time, values, ylabel)
-        plotI+=1
+                axes[i].plot(time,data, "-o", linewidth=1, markersize=1.5, alpha=0.7, )
 
-        for i in range(self.daq.scope.NUM_CHANNELS):
-            channel=list(self.daq.scope.CHANNELS)[i][0]
-            if self.settings.save_avg_std[channel]:
-                if self.settings.channelEnabled[channel]:
-                    # --- average ---
-                    values=self.daq.avg[channel]
-                    ylabel="Average Ch.%s / V" % channel
-                    self.timePlot(axes[plotI], time, values, ylabel)
-                    plotI+=1
+                axes[i].grid(True)
+                axes[i].set_ylabel("%s %s / %s" % (channel, mode, yUnit), fontsize=5)
+                i+=1
+        
+        axes[-1].set_xlabel("Time / min",fontsize=8)
 
-                    # --- std ---
-                    values=self.daq.std[channel]
-                    ylabel="Std.Dev. Ch.%s / V" % channel
-                    self.timePlot(axes[plotI], time, values, ylabel)
-                    plotI+=1
-
-        # --- externals ---
-        if self.settings.useDummy:
-            values=self.hw.dummyVals
-            ylabel="Dummy / V"
-            self.timePlot(axes[plotI], timeHW, values, ylabel)
-
-        axes[0].set_title("Time development. Round %d. \nStart of measurement: %s. Start of this round: %s" %(self.daq.rounds, str(dateTime(self.daq.startthread)), str(dateTime_plusHours(self.daq.startthread, self.daq.rounds))))
-        axes[-1].set_xlabel("Time / min") 
+        text="Measurement started at %s"%dateTime(unixtime)
+        if runde>0:
+            text+="\nThis round started at %s" % dateTime_plusHours(unixtime, runde)
+        axes[0].set_title(text,fontsize=6)
 
         fig.subplots_adjust(wspace=0.1, 
                             hspace=0.03, # space vertically
                             )
-        filename=self.daq.directory+"/Timewise_"+str(self.daq.rounds)+".pdf"
-        fig.savefig(filename, bbox_inches='tight')
+
+        plotname=self.directory+"/"
+        plotname+="TimeAll_"+str(runde)+"_time.pdf"
+        fig.savefig(plotname, bbox_inches='tight')
+        fig.clf()
+        fig.clear()
+        plt.close(fig)
+    # --------------------------------------------------------------------------------
+
+    def plotHistogram(self,fylename, runde, unixtime):
+        self.log.debug("PlotHistogram %s %d %f"%(fylename, runde, unixtime))
+
+        data=np.load(fylename)
+        data= np.hstack(data)
+        c=fylename.split("/")[-1].split(".")[0].split("_")
+        if len(c)>=3:
+            channel=c[0] # A, B, ..., HW
+            mode=c[1]
+        else:
+            channel="" # only for triggerrate
+            mode=c[0]
+
+        if "Triggerrate" in mode: 
+            yUnit="Hz"
+        elif "Area" in mode:
+            yUnit="V*s"
+        else: 
+            yUnit="V"
+
+        mi=np.min(data)
+        ma=np.max(data)
+
+        if "V" in yUnit:
+          if max(ma, -mi) < 1:
+            if not "Area" in mode: yUnit="mV"
+            else: yUnit="mV*s"
+            data*=1000; mi*=1000; ma*=1000
+        if "Hz" in yUnit:
+          if min(ma, -mi) > 1000:
+            yUnit="kHz"
+            data/=1000; mi/=1000; ma/=1000
+        if "s" in yUnit: # area
+            if max(ma, -mi) < 1e-3:
+                yUnit="ms"
+                data*=1e3; mi*=1e3; ma*=1e3
+            if max(ma, -mi) < 1e-3:
+                yUnit="μs"
+                data*=1e3; mi*=1e3; ma*=1e3
+            if max(ma, -mi) < 1e-3:
+                yUnit="ns"
+                data*=1e3; mi*=1e3; ma*=1e3
+
+        xBorders=(mi-0.1*(ma-mi),ma+0.1*(ma-mi))
+        bins=int(len(data)*0.1) # reduce number of bins to account for few values
+        if bins<10: bins=10 # at least 10 bins
+        bins=min(50,bins) # max 50 bins
+        binning=[ i*float((xBorders[1]-xBorders[0]))/bins+xBorders[0] for i in range(bins+1)]
+        binwidth=binning[1]-binning[0]
+        histvals, binedges = np.histogram(data, bins=binning) 
+
+        
+        fig = plt.figure("Name", figsize=(4,3), dpi=100)         
+        ax1 = plt.subplot2grid((1,1), (0, 0))
+
+        ax1.bar(binedges[:-1], histvals, binwidth*0.9, facecolor="C0", edgecolor="C0")
+
+        try: ax1.set_yscale("log")
+        except: pass
+
+        ax1.grid(True)
+        ax1.set_xlabel("%s / %s" % (mode, yUnit))
+        ax1.set_ylabel("Counts")
+        text="Measurement started at %s"%dateTime(unixtime)
+        if runde>0:
+            text+="\nThis round started at %s" % dateTime_plusHours(unixtime, runde)
+        ax1.set_title(text)
+
+        plotname=self.directory+"/"
+        if channel!="":
+            plotname+=str(channel)+"_"
+        plotname+=mode+"_"+str(runde)+"_hist.pdf"
+        fig.savefig(plotname, bbox_inches='tight')
         fig.clf()
         fig.clear()
 
-        
+    # --------------------------------------------------------------------------------
+    def plotWaveform(self, fylename, runde, unixtime, interval):
+
+        self.log.debug("PlotWaveform %s %d %f %e"%( fylename, runde, unixtime, interval))
+
+        c=fylename.split("/")[-1].split(".")[0].split("_")
+        channel=c[0] # A, B, ..., HW
+        mode=c[1]
+
+        data=np.load(fylename)
+        # choose only 30 datasets randomly
+        waveforms=data[np.random.randint(0, data.shape[0], min(30,len(data))), :]
+
+        time=np.arange(0, waveforms.shape[1], 1) * interval # ns
+
+        yUnit="V"
+
+        #improve x and y units
+        ma=np.max(waveforms)
+        mi=np.min(waveforms)
+        if max(ma, -mi) < 1:
+            yUnit="mV"
+            waveforms*=1000
+
+        xUnit="ns"
+        if interval > 1000:
+            time /= 1000
+            interval /= 1000
+            xUnit = "μs"
+        if interval > 1000:
+            time /= 1000
+            interval /= 1000
+            xUnit = "μs"   
+        if interval > 1000:
+            time /= 1000
+            interval /= 1000
+            xUnit = "s" 
+
+        fig = plt.figure("Name", figsize=(7,3), dpi=100)         
+        ax1 = plt.subplot2grid((1,1), (0, 0))
+
+        for waveform in waveforms:
+            ax1.plot(time,waveform, "-",linewidth=1, markersize=1.5, alpha=0.2)
+
+        ax1.grid(True)
+        ax1.set_ylabel("%s / %s" % (mode, yUnit))
+        ax1.set_xlabel("Time / %s"%xUnit)
+        text="Measurement started at %s"%dateTime(unixtime)
+        if runde>0:
+            text+="\nThis round started at %s" % dateTime_plusHours(unixtime, runde)
+        ax1.set_title(text)
+
+        plotname=self.directory+"/"
+        if channel!="":
+            plotname+=str(channel)+"_"
+        plotname+=mode+"_"+str(runde)+"_wfm.pdf"
+        fig.savefig(plotname, bbox_inches='tight')
+        fig.clf()
+        fig.clear()
+
+    # --------------------------------------------------------------------------------
+
+    def plotTime(self, time, fylename, runde, unixtime):
+
+        self.log.debug("PlotTime %s %d %f"%(fylename, runde, unixtime))
+
+        data=np.load(fylename)
+        c=fylename.split("/")[-1].split(".")[0].split("_")
+        if len(c)>=3:
+            channel=c[0] # A, B, ..., HW
+            mode=c[1]
+        else:
+            channel="" # only for triggerrate
+            mode=c[0]
+
+        if "Triggerrate" in mode: 
+            yUnit="Hz"
+            ma=np.max(data)
+            mi=np.min(data)
+            if min(ma, -mi) > 1000:
+                yUnit="kHz"
+                data/=1000
+        elif "HW" in channel:
+            yUnit="?"
+            # HWT adjust unit
+        else: 
+            yUnit="V"
+            ma=np.max(data)
+            mi=np.min(data)
+            if max(ma, -mi) < 1:
+                yUnit="mV"
+                data*=1000
+        # todo, merge time plots
+
+        fig = plt.figure("Name", figsize=(7,3), dpi=100)         
+        ax1 = plt.subplot2grid((1,1), (0, 0))
+
+        ax1.plot(time,data, "-o", linewidth=1, markersize=1.5, alpha=0.7, )
+
+        ax1.grid(True)
+        ax1.set_ylabel("%s / %s" % (mode, yUnit))
+        ax1.set_xlabel("Time / min")
+        text="Measurement started at %s"%dateTime(unixtime)
+        if runde>0:
+            text+="\nThis round started at %s" % dateTime_plusHours(unixtime, runde)
+        ax1.set_title(text)
+
+        plotname=self.directory+"/"
+        if channel!="":
+            plotname+=str(channel)+"_"
+        plotname+=mode+"_"+str(runde)+"_time.pdf"
+        fig.savefig(plotname, bbox_inches='tight')
+        fig.clf()
+        fig.clear()
+        #plt.show()
 
 
-        
-
+# -----------------------------------------------------------------------------

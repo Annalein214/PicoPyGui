@@ -10,7 +10,7 @@ from optparse import OptionParser
 from code.helpers import green, nc, red, yellow, lila, pink, blue
 from code.log import log
 from code.settings import Settings
-from code.hplot2 import hourlyPlot
+from code.hplot import hourlyPlot
 
 # load gui libraries
 from PyQt5 import QtWidgets

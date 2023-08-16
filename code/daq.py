@@ -5,7 +5,6 @@ import numpy as np
 from code.helpers import timestring_humanReadable
 from code.picoscope.device import deviceShelf
 from code.log import log
-from code.hplot import plot
 
 class daq(QThread):
     '''
@@ -47,9 +46,6 @@ class daq(QThread):
         self.log.info("Measurement log file in %s" % (self.out.filename))
 
         self.settings.saveMeasurement=False # reset to false so that the user can decide 
-
-        # link to plot class for hourly plots (only possible here if you want to use same log file)
-        self.hourlyPlot = plot(self.out, self, self.hw, self.settings)
 
         # how many times does the measurement saveAll and restart before stopped
         self.rounds=0 

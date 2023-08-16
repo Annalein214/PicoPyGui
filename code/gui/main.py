@@ -189,7 +189,7 @@ class CentralWidget(MyGui.QWidget):
 
             # --- save or not
             if self.settings.saveMeasurement==True:
-                self.daq.hourlyPlot.plotAll()
+                self.hplot.plotAll()
                 self.daq.saveAll()
                 self.daq.copyLogfile()
             else:
