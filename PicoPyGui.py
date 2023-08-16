@@ -3,12 +3,14 @@ You have to execute this script with python 3 to start the application
 '''
 
 # general libraries
+import faulthandler
 import sys, os
 from optparse import OptionParser
 # custom
 from code.helpers import green, nc, red, yellow, lila, pink, blue
 from code.log import log
 from code.settings import Settings
+from code.hplot2 import hourlyPlot
 
 # load gui libraries
 from PyQt5 import QtWidgets
@@ -51,6 +53,9 @@ def main(opts, log):
     # initialize external hardware class
     hw = external(log, opts, settings, scope)
 
+    # initialize class for plotting the data automatically
+    hplot = hourlyPlot(log)
+
     # start GUI or terminal
     if opts.konsole==False:
         app = MyGui.QApplication(sys.argv)
@@ -62,7 +67,8 @@ def main(opts, log):
                                 opts, 
                                 settings,
                                 graf,
-                                hw
+                                hw,
+                                hplot
                                 )
         gui.show()
         log.debug("Window is set up")
@@ -82,6 +88,8 @@ if __name__ == '__main__':
     '''
     get the user input from command line and start up
     '''
+
+    faulthandler.enable()
 
     # define and get program options
     usage="""

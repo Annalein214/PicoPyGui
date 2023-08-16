@@ -31,6 +31,8 @@ class external(QThread):
 
         self.saveMeasurement=self.settings.saveMeasurement # reset to false so that the user can decide 
 
+        self.rounds=0 # how many times does the measurement saveAll and restart before stopped
+
         # needed for the first round
         self.endtime = time.time() # need this value for the first loop
         self.lastSaved = self.endtime # keep track of saving the data every hour, here this is just for the first round
@@ -64,15 +66,8 @@ class external(QThread):
             self.analysis()
             
             time.sleep(self.settings.HWSleepTime)
-            
-
-            # save after one our
-            if self.endtime - self.lastSaved > (60*60):
-                self.out.info("Reset HW run after %d seconds"%(self.endtime - self.lastSaved)) 
-                self.saveAll()
 
         self.out.debug("HW measurement stopped")
-        self.saveAll()
 
 
     # ****** Analysis **********************************************************
@@ -103,12 +98,14 @@ class external(QThread):
         
         self.out.info("HW Save all in round %d"%(self.rounds))
 
+        self.save("TimeHW", self.time)
+
         '''
         HWT save all values here
         '''
 
         if self.dummy!=None:
-            self.save("Dummy", self.dummyVals)
+            self.save("HW_Dummy", self.dummyVals)
 
         # Update settings
         self.rounds+=1
@@ -158,7 +155,6 @@ class external(QThread):
         self._progress=0 # progress of thread
         self._threadIsStopped=True # use this to stop the thread (effect is not directly!)
         # --- run -----
-        self.rounds=0 # how many times does the measurement saveAll and restart before stopped
         self.startthread=0 # time when thread started
         self.dummy=None
         

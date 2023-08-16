@@ -37,7 +37,7 @@ def dateTime_plusHours(t, hours):
     '''
     get time string plus certain number of hours
     '''
-    t+=60*60*hours
+    t=float(t)+60*60*int(hours)
     s=time.localtime(float(t))
     return "%4d.%02d.%02d %02d:%02d:%02d" % (s.tm_year,s.tm_mon,s.tm_mday,s.tm_hour,s.tm_min,s.tm_sec)
 

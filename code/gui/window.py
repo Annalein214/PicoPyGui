@@ -13,7 +13,7 @@ class ApplicationWindow(MyGui.QMainWindow):
     
     def __init__(self, daq, 
                     log, opts, 
-                    settings, graph, hw
+                    settings, graph, hw, hplot
                     ):
         MyGui.QMainWindow.__init__(self)
 
@@ -24,12 +24,13 @@ class ApplicationWindow(MyGui.QMainWindow):
         self.settings=settings
         self.graph=graph
         self.hw=hw
+        self.hplot=hplot
         
         self.windowOutline()
         self.windowAttributes()
 
         # construct the inner part of the window
-        self.main_widget = CentralWidget(self, log, daq, settings, graph, hw)
+        self.main_widget = CentralWidget(self, log, daq, settings, graph, hw, hplot)
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
 

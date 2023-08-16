@@ -19,7 +19,7 @@ class daq(QThread):
     '''
 
     data_updated = pyqtSignal() # signals and slots need to be in class declaration and not constructor!
-
+    data_saved = pyqtSignal()
  
     #def __del__(self):
     #    self.wait()
@@ -50,6 +50,9 @@ class daq(QThread):
 
         # link to plot class for hourly plots (only possible here if you want to use same log file)
         self.hourlyPlot = plot(self.out, self, self.hw, self.settings)
+
+        # how many times does the measurement saveAll and restart before stopped
+        self.rounds=0 
 
         # needed for the first round
         self.endtime = time.time() # need this value for the first loop
@@ -151,7 +154,7 @@ class daq(QThread):
 
             if self.endtime - self.lastSaved > (60*60):
                 self.out.info("Reset run after %d seconds"%(self.endtime - self.lastSaved)) 
-                self.hourlyPlot.plotAll()
+                #self.hourlyPlot.plotAll()
                 self.saveAll()
 
             # --- stop the loop ---
@@ -166,7 +169,8 @@ class daq(QThread):
                 # remove all self.hw from hplot.py => no solution
                 # remove all out/log frmo hplot.py => no solution
                 # only waveform and w/o helper => no solution
-                self.hourlyPlot.plotAll()
+                # tried upgrade of pip3 matplotlib from 3.7.0 to 3.7.2
+                #self.hourlyPlot.plotAll()
                 self.saveAll()
                 self.copyLogfile()
                 self.out.info("Stop the measurement after elapsed time, chosen by the user, is reached: %d min"%self.settings.measurementduration)
@@ -353,12 +357,14 @@ class daq(QThread):
         self.save("Time", self.time)
         self.save("Duration", self.duration)
         # TODO devices
+        self.hw.saveAll()
 
         # Update settings
         self.rounds+=1
         self.lastSaved = self.endtime
         self.settings.saveMeasurement=True
         self.prepareAnalysis() # reset all variables
+        self.data_saved.emit()
         
     def save(self, name, values):
         filename=self.directory+"/"+name+"_"+str(self.rounds)+".npy"
@@ -441,6 +447,11 @@ class daq(QThread):
     def setSampling(self):
         if self.opts.test: 
             self.interval=1./self.settings.samplefreq
+            self.out.info("Sampling Rate: %e Hz; Samples %e; MaxSamples %e; Interval %e ns"%(self.settings.samplefreq, 
+                                                                    self.settings.nosamples, 
+                                                                    0,
+                                                                    self.interval*1e9))
+
             return
         samplingRate, maxSamples, samples = self.scope.setSamplingFrequency(self.settings.samplefreq, self.settings.nosamples) # sample frequency, number of samples
         #maxSamples comes from the device, i.e. in test mode it is not known
@@ -463,6 +474,7 @@ class daq(QThread):
         # number of memory segments must be equal or larger than self.settings.captures
         if self.settings.captures!=0:
             if self.opts.test: 
+                self.out.info("Captures: %e; max Samples per Segment %e"%(self.settings.captures, 0))
                 return True
             maxSamples_per_Segment = self.scope.memorySegments(self.settings.captures) 
             # otherwise the sample number got reduced
@@ -472,7 +484,7 @@ class daq(QThread):
                 return False # stop run
             self.scope.setNoOfCaptures(self.settings.captures)
 
-            self.out.info("Captures: %e"%(self.settings.captures, maxSamples_per_Segment))
+            self.out.info("Captures: %e; max Samples per Segment %e"%(self.settings.captures, maxSamples_per_Segment))
             return True
         else:
             self.out.error("Capture number needs to be larger than zero")
@@ -510,7 +522,6 @@ class daq(QThread):
         # --- run -----
         self.sleeptime=0.0001 # time interval after which the thread asks the scope if it is done. 1ms should be ok if you make the measurement longer than 1s
         self.settings.saveMeasurement=False # default is false, so the user can decide. After 1h automatically set to true though
-        self.rounds=0 # how many times does the measurement saveAll and restart before stopped
         '''
         self.starttime # starttime of thread (not start time of scope execution!)
         self.endtime # end time of the last block in seconds after 1970

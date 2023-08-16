@@ -11,7 +11,7 @@ class CentralWidget(MyGui.QWidget):
     The inner layout of the application window
     initializes all sub-widgets and gives settings to those
     '''
-    def __init__(self, parent, log, daq, settings, graph, hw):
+    def __init__(self, parent, log, daq, settings, graph, hw, hplot):
         super(CentralWidget, self).__init__(parent)
         self.daq=daq
         self.log=log
@@ -19,6 +19,7 @@ class CentralWidget(MyGui.QWidget):
         self.graph=graph
         self.hw=hw
         self.parent=parent
+        self.hplot=hplot
 
         # copy geometry information from parent:
         self.left_minimum_size=parent.left_minimum_size
@@ -54,6 +55,8 @@ class CentralWidget(MyGui.QWidget):
         self.daq.finished.connect(self.stopMeasurement) 
         # scope tells the graph to update
         self.daq.data_updated.connect(self.plot.update_figure)
+        # scope tells the hourly / end plot to be produced
+        self.daq.data_saved.connect(self.hplot.plotAll)
 
     def leftSide(self):
         # left side will comprise the plot
@@ -188,7 +191,6 @@ class CentralWidget(MyGui.QWidget):
             if self.settings.saveMeasurement==True:
                 self.daq.hourlyPlot.plotAll()
                 self.daq.saveAll()
-                self.hw.saveAll()
                 self.daq.copyLogfile()
             else:
                 self.hw.deleteFile()
@@ -204,7 +206,8 @@ class CentralWidget(MyGui.QWidget):
                 time.sleep(0.1)
             self.log.debug("HW Measurement stopped.")
             if self.settings.saveMeasurement==True:
-                self.hw.saveAll()
+                pass
+                #self.hw.saveAll()
             else:
                 self.hw.deleteFile()
                 self.log.info("HW Measurement not saved.")

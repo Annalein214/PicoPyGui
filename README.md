@@ -63,8 +63,14 @@ Search in the code for the string ”HWT" to find all locations where you need t
 * combine picoscope types to one class with sub-classes implementing the changes
 * plots live verändern möglich machen
 * fft currently disabled
+* check pyqtgraph, could be nicer
 
 # Currently working on
 - fft bug
 - check: daq units of offset and triggervoltage
-- beenden sicher machen mit strg-w / strg-c etc.
+
+
+
+
+
+
