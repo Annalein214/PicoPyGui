@@ -29,7 +29,7 @@ class external(QThread):
 
         self.log.info("Measurement log file in %s" % (self.out.filename))
 
-        self.saveMeasurement=self.daq.saveMeasurement # reset to false so that the user can decide 
+        self.saveMeasurement=self.settings.saveMeasurement # reset to false so that the user can decide 
 
         # needed for the first round
         self.endtime = time.time() # need this value for the first loop
@@ -63,13 +63,16 @@ class external(QThread):
             self.endtime=time.time()
             self.analysis()
             
-            time.sleep(self.HWSleepTime)
+            time.sleep(self.settings.HWSleepTime)
             
 
-        # save after one our
-        if self.endtime - self.lastSaved > (60*60):
+            # save after one our
+            if self.endtime - self.lastSaved > (60*60):
                 self.out.info("Reset HW run after %d seconds"%(self.endtime - self.lastSaved)) 
                 self.saveAll()
+
+        self.out.debug("HW measurement stopped")
+        self.saveAll()
 
 
     # ****** Analysis **********************************************************
@@ -139,12 +142,12 @@ class external(QThread):
         self.setDefault()
 
         #--- HWT: initialise hardware here
-        if self.useDummy: 
+        if self.settings.useDummy: 
             try:
                 self.dummy = Sensor(self.log)
             except:
                 self.log.error("Cannot load hardware Dummy. Switch off.")
-                self.useDummy=False
+                self.settings.useDummy=False
                 self.dummy=None
 
         
@@ -156,11 +159,7 @@ class external(QThread):
         self._threadIsStopped=True # use this to stop the thread (effect is not directly!)
         # --- run -----
         self.rounds=0 # how many times does the measurement saveAll and restart before stopped
-        # --- settings -----
-        self.HWSleepTime=self.settings.attr["HWSleepTime"]
-        # HWT: get defaults for this hardware from settings.cfg
-        # HWT: for the first time, set the value in settings.cfg by hand!
-        self.useDummy=self.settings.attr["useDummy"]
+        self.startthread=0 # time when thread started
         self.dummy=None
         
 

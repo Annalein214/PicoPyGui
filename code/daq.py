@@ -46,10 +46,10 @@ class daq(QThread):
 
         self.log.info("Measurement log file in %s" % (self.out.filename))
 
-        self.saveMeasurement=False # reset to false so that the user can decide 
+        self.settings.saveMeasurement=False # reset to false so that the user can decide 
 
         # link to plot class for hourly plots (only possible here if you want to use same log file)
-        self.hourlyPlot = plot(self.out, self, self.hw)
+        self.hourlyPlot = plot(self.out, self, self.hw, self.settings)
 
         # needed for the first round
         self.endtime = time.time() # need this value for the first loop
@@ -64,7 +64,7 @@ class daq(QThread):
         # enable channels
         for i in range(self.scope.NUM_CHANNELS):
             channel=list(self.scope.CHANNELS)[i][0]
-            self.setChannel(channel, self.channelEnabled[channel])
+            self.setChannel(channel, self.settings.channelEnabled[channel])
 
         # setup trigger
         ok=self.setTrigger()
@@ -78,8 +78,8 @@ class daq(QThread):
         return True
 
     def showProgress(self):
-        if self.measurementduration!=0:
-            self._progress = float(self.endtime-self.startthread)/(self.measurementduration*60)*100
+        if self.settings.measurementduration!=0:
+            self._progress = float(self.endtime-self.startthread)/(self.settings.measurementduration*60)*100
         else:
             # since the measurement is reset every hour use this value for the progress bar
             self._progress = float(self.endtime-self.startthread)/(60*60)*100
@@ -133,14 +133,14 @@ class daq(QThread):
                 data=[]
                 for i in range(self.scope.NUM_CHANNELS):
                     channel=list(self.scope.CHANNELS)[i][0]
-                    vRange=self.voltagerange[channel]*1000*0.5
+                    vRange=self.settings.voltagerange[channel]*1000*0.5
 
                     waveforms=[]
                     for i in range(100):
                         A=np.random.randint(-vRange,vRange)
-                        x=np.arange(0,self.nosamples,1)/self.nosamples*np.pi*np.random.randint(0,5)
+                        x=np.arange(0,self.settings.nosamples,1)/self.settings.nosamples*np.pi*np.random.randint(0,5)
                         x=x-np.pi/10*np.random.randint(0,10)
-                        wfm=A*np.sin(x)+self.offset[channel]
+                        wfm=A*np.sin(x)+self.settings.offset[channel]
                         waveforms.append(wfm/1000)
                     data.append(waveforms)
 
@@ -151,17 +151,25 @@ class daq(QThread):
 
             if self.endtime - self.lastSaved > (60*60):
                 self.out.info("Reset run after %d seconds"%(self.endtime - self.lastSaved)) 
-                #self.hourlyPlot.plotAll()
+                self.hourlyPlot.plotAll()
                 self.saveAll()
 
             # --- stop the loop ---
-            #print(self.endtime - self.startthread, self.measurementduration*60)
-            if self.measurementduration!=0 and ((self.measurementduration*3) < (self.endtime - self.startthread)):
-                # segmentation code when I switch on the following line 
-                self.hourlyPlot.plotAll() 
+            #print(self.endtime - self.startthread, self.settings.measurementduration*60)
+            if self.settings.measurementduration!=0 and ((self.settings.measurementduration*3) < (self.endtime - self.startthread)):
+                # stop hw thread to ensure data integrity => no solution for segmentation fault
+                # keep it anyhow
+                self.hw._threadIsStopped=True
+                while self.hw.isRunning():
+                    time.sleep(0.1)
+                # extra time before or after executing next line => no solution for segmentation fault
+                # remove all self.hw from hplot.py => no solution
+                # remove all out/log frmo hplot.py => no solution
+                # only waveform and w/o helper => no solution
+                self.hourlyPlot.plotAll()
                 self.saveAll()
                 self.copyLogfile()
-                self.out.info("Stop the measurement after elapsed time, chosen by the user, is reached: %d min"%self.measurementduration)
+                self.out.info("Stop the measurement after elapsed time, chosen by the user, is reached: %d min"%self.settings.measurementduration)
                 self._threadIsStopped=True
        
         # after the loop
@@ -208,31 +216,31 @@ class daq(QThread):
         # go through the channels
         for i in range(len(data)):
             channel=list(self.scope.CHANNELS)[i][0]
-            if self.channelEnabled[channel]:
-                if self.save_wfm[channel]:
+            if self.settings.channelEnabled[channel]:
+                if self.settings.save_wfm[channel]:
                     arrai=self.getWFM(data[i], channel)
                     self.wfm[channel].extend(arrai)# use extend since the number of wfm per capture is known
                     self.lastWfm[channel]=np.array(arrai)
-                if self.save_max_amp[channel]:
+                if self.settings.save_max_amp[channel]:
                     arrai=self.max_amplitude(data[i])
                     self.max_amp[channel].extend(arrai)
-                if self.save_min_amp[channel]:
+                if self.settings.save_min_amp[channel]:
                     arrai=self.min_amplitude(data[i])
                     self.min_amp[channel].extend(arrai)
-                if self.save_area[channel]:
+                if self.settings.save_area[channel]:
                     arrai=self.calcArea(data[i])
                     self.area[channel].extend(arrai)
-                if self.save_avg_std[channel]:
+                if self.settings.save_avg_std[channel]:
                     arrai=self.average(data[i])
                     self.avg[channel].append(arrai)
                     arrai=self.calcStd(data[i])
                     self.std[channel].append(arrai)
-                if self.save_fft[channel]:
+                if self.settings.save_fft[channel]:
                     arrai=self.calcFft(data[i], channel)
                     self.fft[channel].append(arrai)
 
-        rate = self.captures/self.measurementtime*1.e9
-        #print("Rate", rate, self.captures, self.captures/self.measurementtime)
+        rate = self.settings.captures/self.measurementtime*1.e9
+        #print("Rate", rate, self.settings.captures, self.settings.captures/self.measurementtime)
         self.rate.append(rate)
         self.duration.append(self.measurementtime)
         self.time.append(self.startblock/1.e9) # ns -> sec
@@ -241,9 +249,9 @@ class daq(QThread):
        
     def getWFM(self,dataX, channel):
         dx=np.array(dataX)
-        if self.save_wfm_nbr[channel]>0:
+        if self.settings.save_wfm_nbr[channel]>0:
             fakearray=np.arange(0,len(dx),1)
-            index=np.random.choice(fakearray, size=self.save_wfm_nbr[channel], replace=False)
+            index=np.random.choice(fakearray, size=self.settings.save_wfm_nbr[channel], replace=False)
             arrai=dx[index]
         else:
             arrai=dataX
@@ -283,9 +291,9 @@ class daq(QThread):
 
         # downsample first!
         dx=np.array(dataX)
-        if self.save_fft_nbr[channel]>0:
+        if self.settings.save_fft_nbr[channel]>0:
             fakearray=np.arange(0,len(dx),1)
-            index=np.random.choice(fakearray, size=self.save_fft_nbr[channel], replace=False)
+            index=np.random.choice(fakearray, size=self.settings.save_fft_nbr[channel], replace=False)
             arrai=dx[index]
         else:
             arrai=dx
@@ -322,19 +330,19 @@ class daq(QThread):
         # go through the channels
         for i in range(self.scope.NUM_CHANNELS):
             channel=list(self.scope.CHANNELS)[i][0]
-            if self.channelEnabled[channel]:
-                if self.save_wfm[channel]:
+            if self.settings.channelEnabled[channel]:
+                if self.settings.save_wfm[channel]:
                     self.save(channel+"_"+"waveform",self.wfm[channel])
-                if self.save_max_amp[channel]:
+                if self.settings.save_max_amp[channel]:
                     self.save(channel+"_"+"max_amplitude",self.max_amp[channel])
-                if self.save_min_amp[channel]:
+                if self.settings.save_min_amp[channel]:
                     self.save(channel+"_"+"min_amplitude",self.min_amp[channel])
-                if self.save_area[channel]:
+                if self.settings.save_area[channel]:
                     self.save(channel+"_"+"area",self.area[channel])
-                if self.save_avg_std[channel]:
+                if self.settings.save_avg_std[channel]:
                     self.save(channel+"_"+"std",self.std[channel])
                     self.save(channel+"_"+"avg",self.avg[channel])
-                if self.save_fft[channel]:
+                if self.settings.save_fft[channel]:
                     self.save(channel+"_"+"fft",self.fft[channel])
         
         # TODO: check if needed
@@ -349,7 +357,7 @@ class daq(QThread):
         # Update settings
         self.rounds+=1
         self.lastSaved = self.endtime
-        self.saveMeasurement=True
+        self.settings.saveMeasurement=True
         self.prepareAnalysis() # reset all variables
         
     def save(self, name, values):
@@ -382,21 +390,21 @@ class daq(QThread):
         '''
 
         VRange=self.scope.setChannel(channel=channel,
-                                      coupling=self.coupling[channel],
-                                      VRange=self.voltagerange[channel],
-                                      VOffset=self.offset[channel]/1000, # offset is saved in mV, so convert to V here
+                                      coupling=self.settings.coupling[channel],
+                                      VRange=self.settings.voltagerange[channel],
+                                      VOffset=self.settings.offset[channel]/1000, # offset is saved in mV, so convert to V here
                                       enabled=enable,
                                       )
-        if VRange!=self.voltagerange[channel]:
+        if VRange!=self.settings.voltagerange[channel]:
             self.out.warning("Voltagerange of Channel %s was changed from %s to %s"% (channel, 
-                                                                                          self.voltagerange[channel], 
+                                                                                          self.settings.voltagerange[channel], 
                                                                                           VRange))
-            self.voltagerange[channel]=VRange
+            self.settings.voltagerange[channel]=VRange
         self.out.info("Channel %s: Mode %s, Voltage %fV, Offset %fmV, Enabled %d" % (channel,
-                                                                        self.coupling[channel],
-                                                                        self.voltagerange[channel]/1000,
-                                                                        self.offset[channel],
-                                                                        int(self.channelEnabled[channel]),
+                                                                        self.settings.coupling[channel],
+                                                                        self.settings.voltagerange[channel]/1000,
+                                                                        self.settings.offset[channel],
+                                                                        int(self.settings.channelEnabled[channel]),
                                                                         ))
 
     def setTrigger(self):
@@ -410,21 +418,21 @@ class daq(QThread):
 
         
         # ensure channel is enabled
-        self.setChannel(self.triggerchannel, enable=True)
+        self.setChannel(self.settings.triggerchannel, enable=True)
 
-        ret=self.scope.setSimpleTrigger(self.triggerchannel,
-                                    threshold_V=self.triggervoltage/1000, # in gui in mV here in V
-                                    direction=self.triggermode,
-                                    delay=self.triggerdelay,
-                                    timeout_ms=self.triggertimeout,
+        ret=self.scope.setSimpleTrigger(self.settings.triggerchannel,
+                                    threshold_V=self.settings.triggervoltage/1000, # in gui in mV here in V
+                                    direction=self.settings.triggermode,
+                                    delay=self.settings.triggerdelay,
+                                    timeout_ms=self.settings.triggertimeout,
                                     enabled=True)
 
         if ret:
-            self.out.info("Trigger: Channel %s, " %  (self.triggerchannel) +\
-                          "Voltage %fV, " % (self.triggervoltage/1000) +\
-                          "Mode %s, "% (self.triggermode) +\
-                          "Delay %f, "% (self.triggerdelay) +\
-                          "Timeout %f, "% (self.triggertimeout))
+            self.out.info("Trigger: Channel %s, " %  (self.settings.triggerchannel) +\
+                          "Voltage %fV, " % (self.settings.triggervoltage/1000) +\
+                          "Mode %s, "% (self.settings.triggermode) +\
+                          "Delay %f, "% (self.settings.triggerdelay) +\
+                          "Timeout %f, "% (self.settings.triggertimeout))
             return True
         else:
             self.out.error("WARNING: Setting trigger failed!")
@@ -432,39 +440,39 @@ class daq(QThread):
 
     def setSampling(self):
         if self.opts.test: 
-            self.interval=1./self.samplefreq
+            self.interval=1./self.settings.samplefreq
             return
-        samplingRate, maxSamples, samples = self.scope.setSamplingFrequency(self.samplefreq, self.nosamples) # sample frequency, number of samples
+        samplingRate, maxSamples, samples = self.scope.setSamplingFrequency(self.settings.samplefreq, self.settings.nosamples) # sample frequency, number of samples
         #maxSamples comes from the device, i.e. in test mode it is not known
-        if self.samplefreq!=samplingRate:
-            self.out.warning("Sampling rate was changed from %e to %e"%(self.samplefreq, samplingRate))
-            self.samplefreq=samplingRate
-        if self.nosamples!=samples:
-            self.out.warning("Sample number was changed from %e to %e"%(self.nosamples, samples))
-            self.nosamples=samples
-        self.interval=1./self.samplefreq
+        if self.settings.samplefreq!=samplingRate:
+            self.out.warning("Sampling rate was changed from %e to %e"%(self.settings.samplefreq, samplingRate))
+            self.settings.samplefreq=samplingRate
+        if self.settings.nosamples!=samples:
+            self.out.warning("Sample number was changed from %e to %e"%(self.settings.nosamples, samples))
+            self.settings.nosamples=samples
+        self.interval=1./self.settings.samplefreq
 
-        self.out.info("Sampling Rate: %e Hz; Samples %e; MaxSamples %e; Interval %e ns"%(self.samplefreq, 
-                                                                    self.nosamples, 
+        self.out.info("Sampling Rate: %e Hz; Samples %e; MaxSamples %e; Interval %e ns"%(self.settings.samplefreq, 
+                                                                    self.settings.nosamples, 
                                                                     maxSamples,
                                                                     self.interval*1e9))
 
         # todo: anything with maxSamples
 
     def setCaptures(self):
-        # number of memory segments must be equal or larger than self.captures
-        if self.captures!=0:
+        # number of memory segments must be equal or larger than self.settings.captures
+        if self.settings.captures!=0:
             if self.opts.test: 
                 return True
-            maxSamples_per_Segment = self.scope.memorySegments(self.captures) 
+            maxSamples_per_Segment = self.scope.memorySegments(self.settings.captures) 
             # otherwise the sample number got reduced
-            if maxSamples_per_Segment<self.nosamples:
+            if maxSamples_per_Segment<self.settings.nosamples:
                 self.out.error( "Reduce sample number per capture to maximum number")
-                self.nosamples=maxSamples_per_Segment
+                self.settings.nosamples=maxSamples_per_Segment
                 return False # stop run
-            self.scope.setNoOfCaptures(self.captures)
+            self.scope.setNoOfCaptures(self.settings.captures)
 
-            self.out.info("Captures: %e"%(self.captures, maxSamples_per_Segment))
+            self.out.info("Captures: %e"%(self.settings.captures, maxSamples_per_Segment))
             return True
         else:
             self.out.error("Capture number needs to be larger than zero")
@@ -498,37 +506,10 @@ class daq(QThread):
         self.out=None # log object, needs to be initialized for saveLogger 
         self._progress=0 # progress of thread
         self._threadIsStopped=True # use this to stop the thread (effect is not directly!)
-        
-        # --- settings -----
-        # (stuff which is remembered after re-launch)
-        # channel settings
-        self.voltagerange=self.settings.attr["voltagerange"]
-        self.coupling=self.settings.attr["coupling"] # dc or ac
-        self.offset=self.settings.attr["offset"] # voltage for offset of channel
-        self.channelEnabled=self.settings.attr["channelEnabled"]
-        # trigger settings
-        self.triggerchannel=self.settings.attr["triggerchannel"]
-        self.triggermode=self.settings.attr["triggermode"]
-        self.triggervoltage=self.settings.attr["triggervoltage"]
-        self.triggerdelay=self.settings.attr["triggerdelay"]
-        self.triggertimeout=self.settings.attr["triggertimeout"]
-        # block settings
-        self.samplefreq=self.settings.attr["samplefreq"]
-        self.captures=self.settings.attr["captures"]
-        self.nosamples=self.settings.attr["nosamples"]
-        self.measurementduration=self.settings.attr["measurementduration"]
-        # save and analysis settings
-        self.save_wfm=self.settings.attr["save_wfm"]
-        self.save_max_amp=self.settings.attr["save_max_amp"]
-        self.save_min_amp=self.settings.attr["save_min_amp"]
-        self.save_area=self.settings.attr["save_area"]
-        self.save_avg_std=self.settings.attr["save_avg_std"]
-        self.save_fft=self.settings.attr["save_fft"]
-        self.save_wfm_nbr=self.settings.attr["save_wfm_nbr"]
-        self.save_fft_nbr=self.settings.attr["save_fft_nbr"]
+
         # --- run -----
         self.sleeptime=0.0001 # time interval after which the thread asks the scope if it is done. 1ms should be ok if you make the measurement longer than 1s
-        self.saveMeasurement=False # default is false, so the user can decide. After 1h automatically set to true though
+        self.settings.saveMeasurement=False # default is false, so the user can decide. After 1h automatically set to true though
         self.rounds=0 # how many times does the measurement saveAll and restart before stopped
         '''
         self.starttime # starttime of thread (not start time of scope execution!)

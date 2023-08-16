@@ -61,7 +61,7 @@ class CentralWidget(MyGui.QWidget):
         
         # add the plot widget
         layout=MyGui.QVBoxLayout()
-        self.plot=plotWidget(self,self.log, self.daq, self.graph, self.hw)
+        self.plot=plotWidget(self,self.log, self.daq, self.settings, self.hw)
         layout.addWidget(self.plot)
         box.setLayout(layout)
         return box

@@ -25,6 +25,11 @@ class Settings:
         #print(self.attr)
         
     def saveSetting(self, var, val):
+        # TODO automize that this is also set as varible of this class
+
+        # save var as class attribute with name var and value val 
+        setattr(self,var,val)
+
         # first save in our local repo
         if "." in var: # dictionaries
             d,e=var.split(".")
@@ -131,11 +136,64 @@ class Settings:
                 d,e=n.split(".")
                 if d not in self.attr:
                     self.attr[d]={}
+                    setattr(self,d,{e:self.convertType(v, tipe)})
+                else: 
+                    temp=getattr(self,d)
+                    temp[e]=self.convertType(v, tipe)
+                    setattr(self,d,temp)
                 self.attr[d][e]=self.convertType(v, tipe)
             else:
                 
                 self.attr[n]=self.convertType(v, tipe)
+                setattr(self,n,self.convertType(v, tipe))
         self.setfile.close()
+
+        '''
+        # TODO: automatize the following
+
+        # --- Daq -----
+        # (stuff which is remembered after re-launch)
+        # channel settings
+        self.voltagerange=self.attr["voltagerange"]
+        self.coupling=self.attr["coupling"] # dc or ac
+        self.offset=self.attr["offset"] # voltage for offset of channel
+        self.channelEnabled=self.attr["channelEnabled"]
+        # trigger settings
+        self.triggerchannel=self.attr["triggerchannel"]
+        self.triggermode=self.attr["triggermode"]
+        self.triggervoltage=self.attr["triggervoltage"]
+        self.triggerdelay=self.attr["triggerdelay"]
+        self.triggertimeout=self.attr["triggertimeout"]
+        # block settings
+        self.samplefreq=self.attr["samplefreq"]
+        self.captures=self.attr["captures"]
+        self.nosamples=self.attr["nosamples"]
+        self.measurementduration=self.attr["measurementduration"]
+        # save and analysis settings
+        self.save_wfm=self.attr["save_wfm"]
+        self.save_max_amp=self.attr["save_max_amp"]
+        self.save_min_amp=self.attr["save_min_amp"]
+        self.save_area=self.attr["save_area"]
+        self.save_avg_std=self.attr["save_avg_std"]
+        self.save_fft=self.attr["save_fft"]
+        self.save_wfm_nbr=self.attr["save_wfm_nbr"]
+        self.save_fft_nbr=self.attr["save_fft_nbr"]
+
+        # graph stuff
+        self.raw_data_ch=self.attr["raw_data_ch"]
+        self.raw_data_nbr=self.attr["raw_data_nbr"]
+        self.hist_ch_mode=self.attr["hist_ch_mode"]
+        self.time_ch_mode1=self.attr["time_ch_mode1"]
+        self.time_ch_mode2=self.attr["time_ch_mode2"]
+        self.str_ch_mode1=self.attr["str_ch_mode1"]
+        self.str_ch_mode2=self.attr["str_ch_mode2"]
+        self.str_ch_mode3=self.attr["str_ch_mode3"]
+        self.str_ch_mode4=self.attr["str_ch_mode4"]
+        self.str_ch_mode5=self.attr["str_ch_mode5"]
+        # hw stuff  HWT
+        self.HWSleepTime=self.attr["HWSleepTime"]
+        self.useDummy=self.attr["useDummy"]
+        '''
 ##########################################################################################
 '''
 if __name__ == "__main__":

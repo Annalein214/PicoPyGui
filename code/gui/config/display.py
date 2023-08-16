@@ -14,8 +14,8 @@ class displayConfigWidget(MyGui.QWidget):
         self.log=log
         self.daq=daq
         self.settings=settings
-        self.graph=graph
-        self.hw=hw
+        #self.graph=graph todo remove
+        #self.hw=hw todo remove
 
     # -------------------------------------------------
         # layout
@@ -28,17 +28,17 @@ class displayConfigWidget(MyGui.QWidget):
         labelRaw=createLabel("Show waveforms")
         options=self.getRawOptions()
         self.chooseRaw=createSelect(options, 
-                                        self.graph.raw_data_ch, 
+                                        self.settings.raw_data_ch, 
                                         self.updateDisplay)
         labelRawNbr=createLabel("Number of waveforms")
-        self.chooseRawNbr=createTextInput(self.graph.raw_data_nbr, self.updateDisplay)
+        self.chooseRawNbr=createTextInput(self.settings.raw_data_nbr, self.updateDisplay)
 
 
         # --- Histogram ---
         labelHist=createLabel("Show histogram")
         options=self.getHistOptions()
         self.chooseHist=createSelect(options, 
-                                        self.graph.hist_ch_mode, 
+                                        self.settings.hist_ch_mode, 
                                         self.updateDisplay)
 
 
@@ -46,10 +46,10 @@ class displayConfigWidget(MyGui.QWidget):
         labelTime1=createLabel("Show time development")
         options=self.getTimeOptions()
         self.chooseTime1=createSelect(options, 
-                                        self.graph.time_ch_mode1, 
+                                        self.settings.time_ch_mode1, 
                                         self.updateDisplay)
         self.chooseTime2=createSelect(options, 
-                                        self.graph.time_ch_mode2, 
+                                        self.settings.time_ch_mode2, 
                                         self.updateDisplay)
 
 
@@ -58,19 +58,19 @@ class displayConfigWidget(MyGui.QWidget):
         
         options=self.getStrOptions()
         self.chooseStr1=createSelect(options, 
-                                        self.graph.str_ch_mode1, 
+                                        self.settings.str_ch_mode1, 
                                         self.updateDisplay)
         self.chooseStr2=createSelect(options, 
-                                        self.graph.str_ch_mode2, 
+                                        self.settings.str_ch_mode2, 
                                         self.updateDisplay)
         self.chooseStr3=createSelect(options, 
-                                        self.graph.str_ch_mode3, 
+                                        self.settings.str_ch_mode3, 
                                         self.updateDisplay)
         self.chooseStr4=createSelect(options, 
-                                        self.graph.str_ch_mode4, 
+                                        self.settings.str_ch_mode4, 
                                         self.updateDisplay)
         self.chooseStr5=createSelect(options, 
-                                        self.graph.str_ch_mode5, 
+                                        self.settings.str_ch_mode5, 
                                         self.updateDisplay)
 
         labelHelp=createLabel("If you miss options, maybe channel is \nnot enabled?")
@@ -121,8 +121,9 @@ class displayConfigWidget(MyGui.QWidget):
 
         #self.log.debug("Update Display")
 
-        self.graph.raw_data_ch=str(getValueSelect(self.chooseRaw))
-        self.settings.saveSetting("raw_data_ch", self.graph.raw_data_ch)
+        #self.settings.raw_data_ch=str(getValueSelect(self.chooseRaw))
+        raw_data_ch=str(getValueSelect(self.chooseRaw))
+        self.settings.saveSetting("raw_data_ch", raw_data_ch)
 
         rawNbr = str(getTextInput(self.chooseRawNbr))
         if rawNbr=="-" or rawNbr=="":# no wired effect when starting to type a negative number
@@ -134,9 +135,12 @@ class displayConfigWidget(MyGui.QWidget):
             rawNbr=1
 
         # should be below saved number of WFM
-        if self.graph.raw_data_ch!="None":
-            if rawNbr>self.daq.save_wfm_nbr[self.graph.raw_data_ch.split(":")[0]]:
-                rawNbr=self.daq.save_wfm_nbr[self.graph.raw_data_ch.split(":")[0]]
+        #if self.settings.raw_data_ch!="None":
+        if self.settings.raw_data_ch!="None":
+            #if rawNbr>self.settings.save_wfm_nbr[self.settings.raw_data_ch.split(":")[0]]:
+            #    rawNbr=self.settings.save_wfm_nbr[self.settings.raw_data_ch.split(":")[0]]
+            if rawNbr>self.settings.save_wfm_nbr[self.settings.raw_data_ch.split(":")[0]]:
+                rawNbr=self.settings.save_wfm_nbr[self.settings.raw_data_ch.split(":")[0]]
                 self.log.debug("Prevent choosing more than available")
         
         if rawNbr<=0:
@@ -144,40 +148,39 @@ class displayConfigWidget(MyGui.QWidget):
             rawNbr=1
             
         setText(self.chooseRawNbr,rawNbr)
-        self.graph.raw_data_nbr=rawNbr
-        self.settings.saveSetting("raw_data_nbr", self.graph.raw_data_nbr)
+        raw_data_nbr=rawNbr
+        self.settings.saveSetting("raw_data_nbr", raw_data_nbr)
 
-        self.graph.hist_ch_mode=str(getValueSelect(self.chooseHist))
-        self.settings.saveSetting("hist_ch_mode", self.graph.hist_ch_mode)
+        hist_ch_mode=str(getValueSelect(self.chooseHist))
+        self.settings.saveSetting("hist_ch_mode", hist_ch_mode)
 
-        self.graph.time_ch_mode1=str(getValueSelect(self.chooseTime1))
-        self.settings.saveSetting("time_ch_mode1", self.graph.time_ch_mode1)
+        time_ch_mode1=str(getValueSelect(self.chooseTime1))
+        self.settings.saveSetting("time_ch_mode1", time_ch_mode1)
 
-        self.graph.time_ch_mode2=str(getValueSelect(self.chooseTime2))
-        if self.graph.time_ch_mode2==self.graph.time_ch_mode1:
+        time_ch_mode2=str(getValueSelect(self.chooseTime2))
+        if time_ch_mode2==self.settings.time_ch_mode1:
             # prevent double work
             self.log.debug("Prevent double work, set Time 2 to None")
-            self.graph.time_ch_mode2=="None"
+            time_ch_mode2=="None"
             setSelect(self.chooseTime2, "None")# use string instead of variable, seems to not have been set in that time
-        self.settings.saveSetting("time_ch_mode2", self.graph.time_ch_mode2)
+        self.settings.saveSetting("time_ch_mode2", time_ch_mode2)
 
         # dont care about double work for strings
-        self.graph.str_ch_mode1=str(getValueSelect(self.chooseStr1))
-        self.settings.saveSetting("str_ch_mode1", self.graph.str_ch_mode1)
+        str_ch_mode1=str(getValueSelect(self.chooseStr1))
+        self.settings.saveSetting("str_ch_mode1", str_ch_mode1)
 
-        self.graph.str_ch_mode2=str(getValueSelect(self.chooseStr2))
-        self.settings.saveSetting("str_ch_mode2", self.graph.str_ch_mode2)
+        str_ch_mode2=str(getValueSelect(self.chooseStr2))
+        self.settings.saveSetting("str_ch_mode2", str_ch_mode2)
 
-        self.graph.str_ch_mode3=str(getValueSelect(self.chooseStr3))
-        self.settings.saveSetting("str_ch_mode3", self.graph.str_ch_mode3)
+        str_ch_mode3=str(getValueSelect(self.chooseStr3))
+        self.settings.saveSetting("str_ch_mode3", str_ch_mode3)
 
-        self.graph.str_ch_mode4=str(getValueSelect(self.chooseStr4))
-        self.settings.saveSetting("str_ch_mode4", self.graph.str_ch_mode4)
+        str_ch_mode4=str(getValueSelect(self.chooseStr4))
+        self.settings.saveSetting("str_ch_mode4", str_ch_mode4)
 
-        self.graph.str_ch_mode5=str(getValueSelect(self.chooseStr5))
-        self.settings.saveSetting("str_ch_mode5", self.graph.str_ch_mode5)
+        str_ch_mode5=str(getValueSelect(self.chooseStr5))
+        self.settings.saveSetting("str_ch_mode5", str_ch_mode5)
 
-        #print("display", self.daq, type(self.daq))
 
 # ********************************************************************************
     # Update widget functions
@@ -206,21 +209,21 @@ class displayConfigWidget(MyGui.QWidget):
 
         clearSelect(self.chooseRaw)
         options=self.getRawOptions()
-        index=recreateSelect(options, self.chooseRaw, self.graph.raw_data_ch)
+        index=recreateSelect(options, self.chooseRaw, self.settings.raw_data_ch)
 
-        if self.graph.raw_data_ch!="None":
-            self.graph.raw_data_nbr=min(self.graph.raw_data_nbr,self.daq.save_wfm_nbr[self.graph.raw_data_ch.split(":")[0]])
-        setText(self.chooseRawNbr,self.graph.raw_data_nbr)
+        if self.settings.raw_data_ch!="None":
+            self.settings.raw_data_nbr=min(self.settings.raw_data_nbr,self.settings.save_wfm_nbr[self.settings.raw_data_ch.split(":")[0]])
+        setText(self.chooseRawNbr,self.settings.raw_data_nbr)
 
         clearSelect(self.chooseHist)
         options=self.getHistOptions()
-        recreateSelect(options, self.chooseHist, self.graph.hist_ch_mode)
+        recreateSelect(options, self.chooseHist, self.settings.hist_ch_mode)
 
         clearSelect(self.chooseTime1)
         clearSelect(self.chooseTime2)
         options=self.getTimeOptions()
-        recreateSelect(options, self.chooseTime1, self.graph.time_ch_mode1)
-        recreateSelect(options, self.chooseTime2, self.graph.time_ch_mode2)
+        recreateSelect(options, self.chooseTime1, self.settings.time_ch_mode1)
+        recreateSelect(options, self.chooseTime2, self.settings.time_ch_mode2)
 
         clearSelect(self.chooseStr1)
         clearSelect(self.chooseStr2)
@@ -228,11 +231,11 @@ class displayConfigWidget(MyGui.QWidget):
         clearSelect(self.chooseStr4)
         clearSelect(self.chooseStr5)
         options=self.getStrOptions()
-        recreateSelect(options, self.chooseStr1, self.graph.str_ch_mode1)
-        recreateSelect(options, self.chooseStr2, self.graph.str_ch_mode2)
-        recreateSelect(options, self.chooseStr3, self.graph.str_ch_mode3)
-        recreateSelect(options, self.chooseStr4, self.graph.str_ch_mode4)
-        recreateSelect(options, self.chooseStr5, self.graph.str_ch_mode5)
+        recreateSelect(options, self.chooseStr1, self.settings.str_ch_mode1)
+        recreateSelect(options, self.chooseStr2, self.settings.str_ch_mode2)
+        recreateSelect(options, self.chooseStr3, self.settings.str_ch_mode3)
+        recreateSelect(options, self.chooseStr4, self.settings.str_ch_mode4)
+        recreateSelect(options, self.chooseStr5, self.settings.str_ch_mode5)
 
         # revive signals
         self.chooseRaw.blockSignals(False)
@@ -252,10 +255,10 @@ class displayConfigWidget(MyGui.QWidget):
         options=["None"]
         for i in range(self.daq.scope.NUM_CHANNELS):
             channel=list(self.daq.scope.CHANNELS)[i][0]
-            if self.daq.channelEnabled[channel]:
-                if self.daq.save_wfm[channel]:
+            if self.settings.channelEnabled[channel]:
+                if self.settings.save_wfm[channel]:
                     options.append(channel+":waveform")
-                #if self.daq.save_fft[channel]:
+                #if self.settings.save_fft[channel]:
                 #    options.append(channel+":FFT")
         return options
 
@@ -264,16 +267,16 @@ class displayConfigWidget(MyGui.QWidget):
         options=["None", "Triggerrate"]
         for i in range(self.daq.scope.NUM_CHANNELS):
             channel=list(self.daq.scope.CHANNELS)[i][0]
-            if self.daq.channelEnabled[channel]:
-                if self.daq.save_max_amp[channel]:
+            if self.settings.channelEnabled[channel]:
+                if self.settings.save_max_amp[channel]:
                     options.append(channel+":Max.Amplitude") # no spaces here! otherwise issue in settings.py:126
-                if self.daq.save_min_amp[channel]:
+                if self.settings.save_min_amp[channel]:
                     options.append(channel+":Min.Amplitude")
-                if self.daq.save_area[channel]:
+                if self.settings.save_area[channel]:
                     options.append(channel+":Area")
-                if self.daq.save_avg_std[channel]:
+                if self.settings.save_avg_std[channel]:
                     options.append(channel+":Average")
-                if self.daq.save_avg_std[channel]:
+                if self.settings.save_avg_std[channel]:
                     options.append(channel+":Std. Deviation")
         return options
 
@@ -281,13 +284,13 @@ class displayConfigWidget(MyGui.QWidget):
         options=["None", "Triggerrate"]
         for i in range(self.daq.scope.NUM_CHANNELS):
             channel=list(self.daq.scope.CHANNELS)[i][0]
-            if self.daq.channelEnabled[channel]:
-                if self.daq.save_avg_std[channel]:
+            if self.settings.channelEnabled[channel]:
+                if self.settings.save_avg_std[channel]:
                     options.append(channel+":Average")
-                if self.daq.save_avg_std[channel]:
+                if self.settings.save_avg_std[channel]:
                     options.append(channel+":Std.Deviation")
         # HWT add external hardware options here
-        if self.hw.useDummy: 
+        if self.settings.useDummy: 
             options.append("HW:Dummy")
         return options
 
@@ -295,12 +298,12 @@ class displayConfigWidget(MyGui.QWidget):
         options=["None", "Triggerrate"]
         for i in range(self.daq.scope.NUM_CHANNELS):
             channel=list(self.daq.scope.CHANNELS)[i][0]
-            if self.daq.channelEnabled[channel]:
-                if self.daq.save_avg_std[channel]:
+            if self.settings.channelEnabled[channel]:
+                if self.settings.save_avg_std[channel]:
                     options.append(channel+":Average")
-                if self.daq.save_avg_std[channel]:
+                if self.settings.save_avg_std[channel]:
                     options.append(channel+":Std.Dev.")
         # HWT add external hardware options here
-        if self.hw.useDummy: 
+        if self.settings.useDummy: 
             options.append("HW:Dummy")
         return options

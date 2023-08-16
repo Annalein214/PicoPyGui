@@ -28,7 +28,7 @@ class scopeConfigWidget(MyGui.QWidget):
         for i in range(self.daq.scope.NUM_CHANNELS):
             options.append(list(self.daq.scope.CHANNELS)[i][0])
         self.chooseChannel=createSelect(options, 
-                                        self.daq.triggerchannel, 
+                                        self.settings.triggerchannel, 
                                         self.updateChannel)
 
         # --- Mode ---
@@ -37,20 +37,20 @@ class scopeConfigWidget(MyGui.QWidget):
         for entry in self.daq.scope.THRESHOLD_TYPE.items():
             options.append(entry[0])
         self.chooseMode=createSelect(options,
-                                    self.daq.triggermode,
+                                    self.settings.triggermode,
                                     self.updateMode)
         # --- min suggested Voltage ---
         labelMinVoltage = createLabel("Min. Voltage [mV]")
-        self.minVoltage = createLabel(self.daq.scope.MINTRIGGER[self.daq.voltagerange[self.daq.triggerchannel]])
+        self.minVoltage = createLabel(self.daq.scope.MINTRIGGER[self.settings.voltagerange[self.settings.triggerchannel]])
 
 
         # --- Voltage ---
         labelVoltage = createLabel("Tr. Voltage [mV]  ")
-        self.chooseVoltage=createTextInput(self.daq.triggervoltage,self.updateVoltage)
+        self.chooseVoltage=createTextInput(self.settings.triggervoltage,self.updateVoltage)
 
         # --- Delay ---
         labelDelay = createLabel("Tr. Delay [Sampling Interval]")
-        self.chooseDelay = createTextInput(self.daq.triggerdelay, self.updateDelay)
+        self.chooseDelay = createTextInput(self.settings.triggerdelay, self.updateDelay)
         
         labelHintDelay = createLabel("Note: + will shift trigger to left. \n"+\
                                      "Default at 0 is a 10% shift to \nright. "+\
@@ -60,25 +60,25 @@ class scopeConfigWidget(MyGui.QWidget):
                                      "analysis window.")
         # --- Timeout ---
         labelTimeout = createLabel("Timeout [ms]")
-        self.chooseTimeout=createTextInput(self.daq.triggertimeout,self.updateTimeout)
+        self.chooseTimeout=createTextInput(self.settings.triggertimeout,self.updateTimeout)
 
         # --- Frequency ---
         labelFreq = createLabel("Sampling frequency [Hz]")
-        self.chooseFreq = createTextInput("%e"%self.daq.samplefreq, self.updateFrequency)
+        self.chooseFreq = createTextInput("%e"%self.settings.samplefreq, self.updateFrequency)
 
         labelInt= createLabel("Sampling Interval [ns]")
-        self.labelIntVal=createLabel("%e"%(1.0/self.daq.samplefreq*1.e9))
+        self.labelIntVal=createLabel("%e"%(1.0/self.settings.samplefreq*1.e9))
 
         # --- Samples ---
         labelSample = createLabel("Number of samples")
-        self.chooseSample = createTextInput(str(int(self.daq.nosamples)), self.updateSampleNumer)
+        self.chooseSample = createTextInput(str(int(self.settings.nosamples)), self.updateSampleNumer)
 
         labelWvl= createLabel("Length of Capture [ns]")
-        self.labelWvlVal=createLabel("%e"%(int(self.daq.nosamples)/self.daq.samplefreq*1.e9))
+        self.labelWvlVal=createLabel("%e"%(int(self.settings.nosamples)/self.settings.samplefreq*1.e9))
 
         # --- Captures ---
         labelCaptures = createLabel("Number of captures")
-        self.chooseCaptures = createTextInput(str(int(self.daq.captures)), self.updateCaptures)
+        self.chooseCaptures = createTextInput(str(int(self.settings.captures)), self.updateCaptures)
 
         # --- Choose channels
 
@@ -87,8 +87,8 @@ class scopeConfigWidget(MyGui.QWidget):
         self.chEnNum=0
         for i in range(self.daq.scope.NUM_CHANNELS):
             chName=list(self.daq.scope.CHANNELS)[i][0]
-            en=bool(self.daq.channelEnabled[chName])
-            if chName==self.daq.triggerchannel and not en:
+            en=bool(self.settings.channelEnabled[chName])
+            if chName==self.settings.triggerchannel and not en:
                 self.log.error("Trigger channel (%s) is not enabled." % chName)
                 en=True
             self.chEnNum+=en
@@ -98,7 +98,7 @@ class scopeConfigWidget(MyGui.QWidget):
             self.chEnabled.append(wid)
         # --- Measurement time
         labelTime = createLabel("Measurement time [min]")
-        self.chooseTime=createTextInput(self.daq.measurementduration, self.updateTime)
+        self.chooseTime=createTextInput(self.settings.measurementduration, self.updateTime)
 
         # -------------------------------------------------
         # compose the layout
@@ -162,13 +162,13 @@ class scopeConfigWidget(MyGui.QWidget):
             self.log.error("Could not convert string to int %s"%duration)
             duration=0
             setText(self.chooseTime,"0")
-        self.daq.measurementduration=duration
-        self.settings.saveSetting("measurementduration", self.daq.measurementduration)
+        #self.settings.measurementduration=duration
+        self.settings.saveSetting("measurementduration", duration)
  
 
     def updateFrequency(self):
         freq = str(getTextInput(self.chooseFreq))
-        if freq=="":
+        if freq=="" or freq==0:
             freq=1.e9
         try:
             samplefreq=int(float(freq))
@@ -177,6 +177,7 @@ class scopeConfigWidget(MyGui.QWidget):
             samplefreq=1.e9
             setText(self.chooseFreq,"1.e9")
 
+        if samplefreq==0: samplefreq=1.e9
         sampleInterval = 1.0 / samplefreq
         timebase=self.daq.scope.getTimeBaseNum(sampleInterval)
         ntimebase=timebase
@@ -196,15 +197,15 @@ class scopeConfigWidget(MyGui.QWidget):
         newFreq=1.0/newInterval
 
         setText(self.labelIntVal,"%e"%(newInterval*1e9))
-        setText(self.labelWvlVal,"%e"%(newInterval*int(self.daq.nosamples)*1e9))
+        setText(self.labelWvlVal,"%e"%(newInterval*int(self.settings.nosamples)*1e9))
 
         if abs(newFreq-samplefreq)>0.1:
             self.log.warning("Chosen frequency (%e) was changed to match Scope settings: %e"%(samplefreq, newFreq))
             samplefreq=newFreq
             setText(self.chooseFreq,"%e"%newFreq)
 
-        self.daq.samplefreq=samplefreq
-        self.settings.saveSetting("samplefreq", self.daq.samplefreq)
+        #self.settings.samplefreq=samplefreq
+        self.settings.saveSetting("samplefreq", samplefreq)
 
     def updateSampleNumer(self):
         nosamples = str(self.chooseSample.text())
@@ -216,10 +217,10 @@ class scopeConfigWidget(MyGui.QWidget):
             setText(self.chooseSample,"1.e9")
 
 
-        setText(self.labelWvlVal,"%e"%(float(nosamples)/self.daq.samplefreq*1e9))
+        setText(self.labelWvlVal,"%e"%(float(nosamples)/self.settings.samplefreq*1e9))
 
-        self.daq.nosamples=nosamples
-        self.settings.saveSetting("nosamples", self.daq.nosamples)
+        self.settings.nosamples=nosamples
+        self.settings.saveSetting("nosamples", nosamples)
 
     def updateCaptures(self):
 
@@ -230,8 +231,8 @@ class scopeConfigWidget(MyGui.QWidget):
             self.log.error("Could not convert string to int %s"%captures)
             captures=0
             setText(self.chooseCaptures,"0")
-        self.daq.captures=captures
-        self.settings.saveSetting("captures", self.daq.captures)
+        #self.settings.captures=captures
+        self.settings.saveSetting("captures", captures)
         # connection between samples and captures can only be done during runtime!        
 
     def updateChannel(self):
@@ -239,18 +240,18 @@ class scopeConfigWidget(MyGui.QWidget):
         read all chosen settings
         '''
 
-        self.daq.triggerchannel = str(getValueSelect(self.chooseChannel))
-        setText(self.minVoltage,str(self.daq.scope.MINTRIGGER[self.daq.voltagerange[self.daq.triggerchannel]]))
-        self.settings.saveSetting("triggerchannel", self.daq.triggerchannel)
+        triggerchannel = str(getValueSelect(self.chooseChannel))
+        setText(self.minVoltage,str(self.daq.scope.MINTRIGGER[self.settings.voltagerange[triggerchannel]]))
+        self.settings.saveSetting("triggerchannel", triggerchannel)
 
         self.updateChEn()
     def updateMode(self):
-        self.daq.triggermode = str(getValueSelect(self.chooseMode))
-        self.settings.saveSetting("triggermode", self.daq.triggermode)
+        triggermode = str(getValueSelect(self.chooseMode))
+        self.settings.saveSetting("triggermode", triggermode)
 
     def updateTimeout(self):
-        self.daq.triggertimeout =str(getTextInput(self.chooseDelay))
-        self.settings.saveSetting("triggertimeout", self.daq.triggertimeout)
+        triggertimeout =str(getTextInput(self.chooseDelay))
+        self.settings.saveSetting("triggertimeout", triggertimeout)
 
     def updateVoltage(self):
         triggervoltage = str(self.chooseVoltage.text())
@@ -262,13 +263,13 @@ class scopeConfigWidget(MyGui.QWidget):
             self.log.error("Could not convert string to int %s"%triggervoltage)
             triggervoltage=0
             setText(self.chooseVoltage,"0")
-        if abs(triggervoltage)/1000>self.daq.voltagerange[self.daq.triggerchannel]:
+        if abs(triggervoltage)/1000>self.settings.voltagerange[self.settings.triggerchannel]:
             self.log.error("Triggervoltage (%d V) outside voltagerange (%s V) for channel %s" % (
                                 triggervoltage/1000, 
-                                self.daq.voltagerange[self.daq.triggerchannel], 
-                                self.daq.triggerchannel))
-        self.daq.triggervoltage=triggervoltage
-        self.settings.saveSetting("triggervoltage", self.daq.triggervoltage)
+                                self.settings.voltagerange[self.settings.triggerchannel], 
+                                self.settings.triggerchannel))
+        #self.settings.triggervoltage=triggervoltage
+        self.settings.saveSetting("triggervoltage", triggervoltage)
 
     def updateDelay(self):
         delay = str(getTextInput(self.chooseDelay))
@@ -280,8 +281,8 @@ class scopeConfigWidget(MyGui.QWidget):
             self.log.error("Could not convert string to int %s"%delay)
             triggerdelay=0
             setText(self.chooseVoltage,"0")
-        self.daq.triggerdelay=triggerdelay
-        self.settings.saveSetting("triggerdelay", self.daq.triggerdelay)
+        #self.settings.triggerdelay=triggerdelay
+        self.settings.saveSetting("triggerdelay", triggerdelay)
 
 
     def updateChEn(self):
@@ -292,15 +293,14 @@ class scopeConfigWidget(MyGui.QWidget):
             chName=getCheckboxValue(entry)
             chName=chName.split(" ")[1]
             en=entry.isChecked()
-            if chName==self.daq.triggerchannel and not en:
+            if chName==self.settings.triggerchannel and not en:
                 self.log.error("Trigger channel (%s) is not enabled." % chName)
                 en=True
             setCheckbox(entry,en)
             self.chEnNum+=en
-            self.daq.channelEnabled[chName]=en
+            #self.settings.channelEnabled[chName]=en
         
-        self.settings.saveSetting("channelEnabled.%s"%chName, 
-                                self.daq.channelEnabled[chName])
+            self.settings.saveSetting("channelEnabled.%s"%chName,en)
         
         self.updateFrequency()
         # TODO bug: if you press the trigger channel twice, the check actually disappears!

@@ -49,11 +49,11 @@ class plotWidget(FigureCanvas):
         interval with a new plot.
     """
 
-    def __init__(self, parent, log, daq, graph, hw):
+    def __init__(self, parent, log, daq, settings, hw):
 
         self.log = log
         self.daq = daq
-        self.graph = graph
+        self.settings = settings
         self.hw = hw
         
         # initialize the figure, needs to be done first!
@@ -172,11 +172,11 @@ class plotWidget(FigureCanvas):
 
 
     def plotText(self,nbr):
-        str_ch_mode = [self.graph.str_ch_mode1, 
-                       self.graph.str_ch_mode2,
-                       self.graph.str_ch_mode3,
-                       self.graph.str_ch_mode4,
-                       self.graph.str_ch_mode5,][nbr-1]
+        str_ch_mode = [self.settings.str_ch_mode1, 
+                       self.settings.str_ch_mode2,
+                       self.settings.str_ch_mode3,
+                       self.settings.str_ch_mode4,
+                       self.settings.str_ch_mode5,][nbr-1]
 
         if nbr==1:  # only execute once
             self.axW.text(0.1, -0.25, "Latest values:", 
@@ -228,12 +228,12 @@ class plotWidget(FigureCanvas):
 
     def plotTime(self,nbr):
 
-        # first check which of the variables and graphs to choose:
+        # first check which of the variables and settingss to choose:
         if nbr==1:
-            time_ch_mode=self.graph.time_ch_mode1
+            time_ch_mode=self.settings.time_ch_mode1
             ax=self.axT1
         else:
-            time_ch_mode=self.graph.time_ch_mode2
+            time_ch_mode=self.settings.time_ch_mode2
             ax=self.axT2
 
         # no prepare plotting
@@ -306,11 +306,11 @@ class plotWidget(FigureCanvas):
 
 
     def plotHistogram(self):
-        if self.graph.hist_ch_mode != "None":
+        if self.settings.hist_ch_mode != "None":
 
-            if self.graph.hist_ch_mode != "Triggerrate":
-                channel=self.graph.hist_ch_mode.split(":")[0]
-                mode=self.graph.hist_ch_mode.split(":")[1]
+            if self.settings.hist_ch_mode != "Triggerrate":
+                channel=self.settings.hist_ch_mode.split(":")[0]
+                mode=self.settings.hist_ch_mode.split(":")[1]
             else:
                 channel=""
                 mode="Triggerrate"
@@ -336,9 +336,9 @@ class plotWidget(FigureCanvas):
                 if not mode in ["Triggerrate"]:
                     # choose units
                     xUnit="V"
-                    vRange=self.daq.voltagerange[channel]
-                    offSet=self.daq.offset[channel]/1000
-                    triggervoltage=self.daq.triggervoltage/1000
+                    vRange=self.settings.voltagerange[channel]
+                    offSet=self.settings.offset[channel]/1000
+                    triggervoltage=self.settings.triggervoltage/1000
                     if vRange < 1: # for convenience change to mV 
                         xUnit="mV"
                         vRange*=1000
@@ -383,7 +383,7 @@ class plotWidget(FigureCanvas):
                 #self.axH.set_ylim(1.e-1, max(histvals)+max(histvals)*0.1)
 
                 # trigger
-                if self.daq.triggerchannel == channel:
+                if self.settings.triggerchannel == channel:
                     self.axH.axvline(triggervoltage, color="red", linewidth=1., label="Trigger") 
                     self.axH.legend(bbox_to_anchor=(0.65, 0.97, 0.35, 0.10), 
                                 ncol=1, mode="expand", frameon=False, 
@@ -415,9 +415,9 @@ class plotWidget(FigureCanvas):
 
         # todo separate waveform and fft, because code has little overlap
         
-        if self.graph.raw_data_ch != "None":
-            channel=self.graph.raw_data_ch.split(":")[0]
-            mode=self.graph.raw_data_ch.split(":")[1]
+        if self.settings.raw_data_ch != "None":
+            channel=self.settings.raw_data_ch.split(":")[0]
+            mode=self.settings.raw_data_ch.split(":")[1]
 
             if "waveform" in mode:
                 title="Waveform"
@@ -441,9 +441,9 @@ class plotWidget(FigureCanvas):
 
                 # choose units
                 yUnit="V"
-                vRange=self.daq.voltagerange[channel]
-                offSet=self.daq.offset[channel]/1000
-                triggervoltage=self.daq.triggervoltage/1000
+                vRange=self.settings.voltagerange[channel]
+                offSet=self.settings.offset[channel]/1000
+                triggervoltage=self.settings.triggervoltage/1000
                 if vRange < 1: # for convenience change to mV 
                     yUnit="mV"
                     vRange*=1000
@@ -461,7 +461,7 @@ class plotWidget(FigureCanvas):
 
             # choose which waveforms to plot from the last round of waveforms
             fakearray=np.arange(0,len(values), 1)
-            index=np.random.choice(fakearray, size=min(self.graph.raw_data_nbr, len(values)), replace=False)
+            index=np.random.choice(fakearray, size=min(self.settings.raw_data_nbr, len(values)), replace=False)
             vals=values[index]
             #print(len(values), np.min(values), np.max(values))
             #print(len(vals), np.min(vals), np.max(vals))
@@ -477,7 +477,7 @@ class plotWidget(FigureCanvas):
                                 linestyle="-", linewidth=1.0, alpha=0.5)
 
             # trigger
-            if self.daq.triggerchannel == channel and title!="FFT":
+            if self.settings.triggerchannel == channel and title!="FFT":
                 self.axW.axhline(triggervoltage, color="red", linewidth=1., label="Trigger") 
                 self.axW.legend(bbox_to_anchor=(0.65, 0.97, 0.35, 0.10), 
                             ncol=1, mode="expand", frameon=False, 

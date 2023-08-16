@@ -12,7 +12,7 @@ class hardwareConfigWidget(MyGui.QWidget):
         self.log=log
         self.daq=daq
         self.settings=settings
-        self.hw=hw
+        self.hw=hw # TODO not needed?
 
         # -------------------------------------------------
         # layout
@@ -24,7 +24,7 @@ class hardwareConfigWidget(MyGui.QWidget):
 
         # --- Sleeptime ---
         labelTime = createLabel("Time between \nmeasurements [s]")
-        self.chooseTime=createTextInput(int(self.hw.HWSleepTime), 
+        self.chooseTime=createTextInput(int(self.settings.HWSleepTime), 
                                           self.updateHW)
 
         labelHint=createLabel("Switch on available Sensors:")
@@ -32,7 +32,7 @@ class hardwareConfigWidget(MyGui.QWidget):
         # HWT: add your options here
         # --- Dummy ----
         self.chooseDummy=createCheckbox("Dummy", # don't change name, it is processed elsewhere
-                            self.hw.useDummy,
+                            self.settings.useDummy,
                             self.updateHW)
 
         # -------------------------------------------------
@@ -69,15 +69,15 @@ class hardwareConfigWidget(MyGui.QWidget):
             self.log.error("Choose a positive time in seconds %f"%time)
             time=1
         self.chooseTime.setText(str(time))
-        self.hw.HWSleepTime=time
+        #self.settings.HWSleepTime=time
         # save value to settings
         self.settings.saveSetting("HWSleepTime", time)
 
 
         # HWT handle user choice here
 
-        self.hw.useDummy=getCheckboxEnabled(self.chooseDummy)
-        self.settings.saveSetting("useDummy", self.hw.useDummy)
+        useDummy=getCheckboxEnabled(self.chooseDummy)
+        self.settings.saveSetting("useDummy", useDummy)
 
 
 
