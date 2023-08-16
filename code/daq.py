@@ -521,3 +521,12 @@ class daq(QThread):
         self.lastSaved=time.time()
         self.measurementtime
         '''
+
+
+    def close(self):
+        if not self.opts.test:
+            self.scope.close()
+            self.scope=None
+        self.log.info("Picoscope closed. Good night!")
+
+

@@ -99,6 +99,9 @@ class Sensor:
             self.log.info(TAG+"Error testing port %s: %s" %( port, e))
             return False
 
+    def close(self):
+        #self.device.close()
+        pass
 
 # -----------------------------------------------------------------------------
 # test

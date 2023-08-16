@@ -37,8 +37,9 @@ class ApplicationWindow(MyGui.QMainWindow):
         self.close()
 
     def closeEvent(self, ce):
-        #self.daq.close()
-        self.log.endLogging()
+        self.daq.close()
+        self.hw.close()
+        self.log.endLogging() # only adds a print
         self.fileQuit()
 
     def windowAttributes(self):

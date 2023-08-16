@@ -255,7 +255,7 @@ class displayConfigWidget(MyGui.QWidget):
         options=["None"]
         for i in range(self.daq.scope.NUM_CHANNELS):
             channel=list(self.daq.scope.CHANNELS)[i][0]
-            print(channel,self.settings.channelEnabled[channel], self.settings.save_wfm[channel])
+            #print(channel,self.settings.channelEnabled[channel], self.settings.save_wfm[channel])
             if self.settings.channelEnabled[channel]:
                 if self.settings.save_wfm[channel]:
                     options.append(channel+":waveform")

@@ -61,11 +61,10 @@ Search in the code for the string ”HWT" to find all locations where you need t
 * check 3000 properties
 * trigger delay -> understand it
 * combine picoscope types to one class with sub-classes implementing the changes
-* save all settings in settings.py class instead of daq and graph (reduces setter commands!)
 * plots live verändern möglich machen
+* fft currently disabled
 
 # Currently working on
 - fft bug
 - check: daq units of offset and triggervoltage
 - beenden sicher machen mit strg-w / strg-c etc.
-- external Hardware

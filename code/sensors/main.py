@@ -162,6 +162,15 @@ class external(QThread):
         self.startthread=0 # time when thread started
         self.dummy=None
         
+    def close(self):
+        self.dummy.close()
+        self.dummy=None
+
+        if not self.opts.test:
+            # HWT close your stuff here
+            pass
+        self.log.info("Hardware closed. Good night!")
+
 
 
 

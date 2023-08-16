@@ -333,7 +333,7 @@ class scopeConfigWidget(MyGui.QWidget):
                 if ch==chName and en==False:
                     self.settings.saveSetting("str_ch_mode5", "None")
 
-            print("Enabled", chName, en)
+            #print("Enabled", chName, en)
             self.settings.saveSetting("channelEnabled.%s"%chName,en)
         
         self.updateFrequency()
