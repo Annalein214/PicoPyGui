@@ -44,6 +44,9 @@ class CentralWidget(MyGui.QWidget):
         self.setConnections()
 
     def setConnections(self):
+        # link hw to daq here, cannot be done at initalization due to an egg and henn issue
+        self.daq.hw=self.hw
+        # handle progressbar
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.update_progressbar)
         self.timer.start(1000) # milliseconds?
@@ -127,8 +130,6 @@ class CentralWidget(MyGui.QWidget):
 
     def startMeasurement(self):
         if self.button.text()=="Start":            
-            # link hw to daq here, cannot be done at initalization due to an egg and henn issue
-            self.daq.hw=self.hw
             if not self.daq.isRunning():
                     self.button.setText('Stop')
                     self.daq._threadIsStopped=False
@@ -167,13 +168,12 @@ class CentralWidget(MyGui.QWidget):
             self.log.debug("Measurement stopped.")
             
             # --- check if it should be saved
-            if not self.daq.saveMeasurement:
+            if not self.settings.saveMeasurement:
                 text, ok = MyGui.QInputDialog.getText(self, 'Do you want to save?', 
                                             'Do you want to save this measurement?\n'+
                                             'You can enter a last Logbook message here:')
                 if ok: 
-                    self.daq.saveMeasurement=True
-                    self.hw.saveMeasurement=True
+                    self.settings.saveMeasurement=True
                     self.daq.out.msg("LMSG:"+str(text))
                     self.hw.out.msg("LMSG:"+str(text))
 
@@ -185,7 +185,7 @@ class CentralWidget(MyGui.QWidget):
             self.log.debug("HW Measurement stopped.")
 
             # --- save or not
-            if self.daq.saveMeasurement==True:
+            if self.settings.saveMeasurement==True:
                 self.daq.hourlyPlot.plotAll()
                 self.daq.saveAll()
                 self.hw.saveAll()
@@ -203,7 +203,7 @@ class CentralWidget(MyGui.QWidget):
             while self.hw.isRunning():
                 time.sleep(0.1)
             self.log.debug("HW Measurement stopped.")
-            if self.daq.saveMeasurement==True:
+            if self.settings.saveMeasurement==True:
                 self.hw.saveAll()
             else:
                 self.hw.deleteFile()
