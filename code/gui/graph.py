@@ -1,401 +1,509 @@
-from __future__ import print_function
-from __future__ import absolute_import
-
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-
-
-try:
-    from PyQt4 import QtGui, QtCore
-    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-    MyGui=QtGui
-except ImportError as e:
-    from PyQt5 import QtWidgets, QtCore
-    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-    MyGui=QtWidgets
-    
-import random
 from matplotlib.figure import Figure
+from matplotlib.ticker import MaxNLocator, FormatStrFormatter
 
+
+
+from PyQt5 import QtWidgets, QtCore
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+MyGui=QtWidgets
+    
+import random, time, traceback
 import numpy as np
+
 ##########################################################################################
 
+class graph():
+    '''
+    used for data storage and maybe to do 
+    heavy calculation in a thread as preparation for plot widget
+    '''
+    def __init__(self, log, opts, settings):
+        self.log=log 
+        self.opts=opts
+        self.settings=settings
+
+        # load variables from settings
+        self.setDefault()
+    
+    def setDefault(self):    
+        self.raw_data_ch=self.settings.attr["raw_data_ch"]
+        self.raw_data_nbr=self.settings.attr["raw_data_nbr"]
+        self.hist_ch_mode=self.settings.attr["hist_ch_mode"]
+        self.time_ch_mode1=self.settings.attr["time_ch_mode1"]
+        self.time_ch_mode2=self.settings.attr["time_ch_mode2"]
+        self.str_ch_mode1=self.settings.attr["str_ch_mode1"]
+        self.str_ch_mode2=self.settings.attr["str_ch_mode2"]
+        self.str_ch_mode3=self.settings.attr["str_ch_mode3"]
+        self.str_ch_mode4=self.settings.attr["str_ch_mode4"]
+        self.str_ch_mode5=self.settings.attr["str_ch_mode5"]
+
+##########################################################################################
+# draw figure (general stuff)
 
 class plotWidget(FigureCanvas):
-    """A canvas that updates itself every second with a new plot."""
+    """A canvas that updates itself every 
+        interval with a new plot.
+    """
 
-    def __init__(self, parent, log, daq):
+    def __init__(self, parent, log, daq, graph, hw):
 
         self.log = log
-        self.daq= daq
-
-        dpi=100
-
-        self.fig = Figure(dpi=dpi, facecolor='white')
-        '''
-        #self.ax1 = self.fig.add_subplot(221) # oben rechts
-        #self.ax2 = self.fig.add_subplot(212) # unten
-        #self.ax3 = self.fig.add_subplot(222) # oben links
-        gs=gridspec.GridSpec(2, 4)
-        self.ax1 = self.fig.add_subplot(gs[0,:2])# oben rechts
-        self.ax3 = self.fig.add_subplot(gs[0,2:])# oben links
-        self.ax2 = self.fig.add_subplot(gs[1,:-1])# oben links
+        self.daq = daq
+        self.graph = graph
+        self.hw = hw
         
-        self.ax4 = self.ax2.twinx()
-        self.ax5 = self.ax3.twinx()
-        self.ax4.yaxis.set_label_position("right") # strange bug that the label is on the left side otherwise
-        self.ax5.yaxis.set_label_position("right")
+        # initialize the figure, needs to be done first!
+        self.fig = Figure(dpi=100, facecolor='white')
+        gs=gridspec.GridSpec(5, 4) # y, x devisions
+        self.axH = self.fig.add_subplot(gs[0:2,2:])# histogram; oben links
+        self.axW = self.fig.add_subplot(gs[0:2,:2])# waveform; oben rechts
+        self.axT1 = self.fig.add_subplot(gs[3,:])# time development; unten links
+        self.axT2 = self.fig.add_subplot(gs[4,:], sharex=self.axT1)# time development; unten links
 
-        self.fig.subplots_adjust(left=0.13,
-                                 right=0.86,
-                                 bottom=0.1,
-                                 top=0.97,
-                                 wspace=0.9,
-                                 hspace=0.4,
+        # for later
+        # self.ax4 = self.ax2.twinx()
+        # self.ax4.yaxis.set_label_position("right")
+
+        self.fig.subplots_adjust(left=0.2,right=0.92,
+                                 bottom=0.07,top=0.97,
+                                 wspace=1.2, # space between horizontally arranged plots
+                                 hspace=0.03, # space vertically
                                  )
 
-        self.layout()
-        
-        # test text at start
-        text="Temperatures:\n"+r" $-^{\circ} \,\,\,-^{\circ}$"+"\n"+"$-^{\circ} \,\,\, -^{\circ}$"+"\n\n"
-        text+="Room light: - mV"+"\n\n"
-        text+="Freq/Int: \n"+" - Hz "+"\n"+" - ns \n\n"
-        text+="Rate: " + " - Hz \n\n"
-        text+="Ch B: " + " - V \n\n"
-        text+="Ch C:\n - mV\n\n"
-        self.ax2.text(1.25,1., 
-                         text, 
-                         transform=self.ax4.transAxes,
-                         horizontalalignment='left',
-                         verticalalignment='top',
-                         fontsize=7)
-        '''
-        #
+        # setup canvas
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
-
         FigureCanvas.setSizePolicy(self,
                                    MyGui.QSizePolicy.Expanding,
                                    MyGui.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
+        
+        self.axW.set_title("Waveforms", fontsize=8, loc="left", pad=3, weight="bold")
+        self.axW.set_xlabel("Time")
+        self.axW.set_ylabel("Amplitude")
+        
+        self.axH.set_title("Histogram", fontsize=8, loc="left", pad=3, weight="bold")
+        self.axH.set_ylabel("Counts")
+        self.axH.set_xlabel(r"Amplitude")
 
-        '''
-        # counter of updates
-        self.i=0
+        self.axT1.set_title("Time development", fontsize=8, loc="left", pad=3, weight="bold")
+        self.axT1.set_ylabel("Value ") # todo unit
+        self.axT2.set_ylabel("Value ") # todo unit
+        self.axT2.set_xlabel("Time / min") 
+        plt.setp(self.axT1.get_xticklabels(), visible=False)
+        self.axT1.yaxis.set_major_locator(MaxNLocator(nbins="auto",prune='lower'))
 
-        self.timer = QtCore.QTimer(self)
-        self.timer.timeout.connect(self.update_figure)
-        self.timer.start(self.daq.loopduration)
-        '''
+        self.axW.text(0.1, -0.25, "Latest values:", 
+                          weight="bold", fontsize=8,
+                          transform=self.axW.transAxes, 
+                          horizontalalignment="left", verticalalignment="top",
+                          )
+        self.axW.text(0.1, -0.25-0.05, "Value: None", 
+                        fontsize=8,
+                        transform=self.axW.transAxes, 
+                          horizontalalignment="left", verticalalignment="top",)
+
+        self.axH.grid()
+        self.axW.grid()
+        self.axT1.grid()
+        self.axT2.grid()
+
+        # update is triggered from daq, but make sure this is not too often
+        self.minUpdateTime=1 # sec, ensure that it is larger than time required to make data
+        self.lastUpdate=int(time.time()) - (2*self.minUpdateTime) # ensure that an update will be done directly
+
+        self.log.debug("Init Figure")
+        
+
+    # -------------------------------------------------------------------------
+
+    def update_figure(self): 
+
+        try:
+            # pack into try to avoid nasty crash just because of plotting
+            now=time.time()
+            #print(self.minUpdateTime, (now-self.lastUpdate))
+            if (now-self.lastUpdate)>self.minUpdateTime:
+                #self.log.debug("Update Figure")
+                self.lastUpdate=now
+
+                # clear everything
+                self.axH.clear()
+                self.axW.clear()
+                self.axT1.clear()
+                self.axT2.clear()
+
+                # formatting
+
+                self.axH.grid()
+                self.axW.grid()
+                self.axT1.grid()
+                self.axT2.grid()
+
+                plt.setp(self.axT1.get_xticklabels(), visible=False)
+                self.axT1.yaxis.set_major_locator(MaxNLocator(nbins="auto",prune='lower'))
+
+
+                # plot data
+                self.plotWaveform()
+                self.plotHistogram()
+                for i in range(2):
+                    self.plotTime(i+1)
+                for i in range(5):
+                    self.plotText(i+1)
+                
+
+                # draw everything
+                self.draw()
+            else:
+                self.log.debug("Min time did not elapse")
+        except Exception as e:
+            traceback.print_exc()
+            self.log.error("Graph exception: %s"%(str(e)))
+
+        
+        
 ##########################################################################################
+# draw figure (data stuff)
 
-    def layout(self):
-        # this has to be done for every re-draw
 
-        # common for all axes
-        self.ax1.grid(True)
-        self.ax2.grid(True)
-        self.ax3.grid(True)
+    def plotText(self,nbr):
+        str_ch_mode = [self.graph.str_ch_mode1, 
+                       self.graph.str_ch_mode2,
+                       self.graph.str_ch_mode3,
+                       self.graph.str_ch_mode4,
+                       self.graph.str_ch_mode5,][nbr-1]
 
-        # specific for axes
+        if nbr==1:  # only execute once
+            self.axW.text(0.1, -0.25, "Latest values:", 
+                          weight="bold", fontsize=8,
+                          transform=self.axW.transAxes, 
+                          horizontalalignment="left", verticalalignment="top",
+                          )
 
-        # labels
-        if not self.daq.showArea:
-            self.ax1.set_xlabel(r"Amplitude / mV")
+        if str_ch_mode != "None":
+
+            if ":" in  str_ch_mode:
+                channel=str_ch_mode.split(":")[0]
+                mode=str_ch_mode.split(":")[1]
+            else:
+                channel=""
+
+            if "Triggerrate" in str_ch_mode:
+                value = self.daq.rate[-1]
+                title = "Triggerrate"
+                yUnit = "Hz"
+            elif "Std" in mode:
+                value = self.daq.std[channel][-1]
+                title = "Std. Dev. Ch. %s" % channel
+                yUnit = "V"
+            elif "Average" in mode:
+                value = self.daq.avg[channel][-1]
+                title = "Average Ch. %s" % channel
+                yUnit = "V"
+            # HWT add custom instructions for hardware
+            elif "Dummy" in mode:
+                value = self.hw.dummyVals[-1]
+                title = "Ext. Dummy"
+                yUnit = "V"
+
+            text="%s: %.2e %s" % (title,value,yUnit)
+
+            if nbr < 3:
+                ax=self.axW
+                nbr2=nbr; dx=0
+            else:
+                ax=self.axH
+                nbr2=nbr-3; dx=-0.2
+            
+            ax.text(0.1+dx, -0.25-(0.05*nbr2), text, 
+                        fontsize=8,
+                        transform=ax.transAxes, 
+                          horizontalalignment="left", verticalalignment="top",)
+
+
+    def plotTime(self,nbr):
+
+        # first check which of the variables and graphs to choose:
+        if nbr==1:
+            time_ch_mode=self.graph.time_ch_mode1
+            ax=self.axT1
         else:
-            self.ax1.set_xlabel(r"Charge / pC")
-        self.ax1.set_ylabel("Counts")
-        self.ax2.set_xlabel(r"Time / s")
-        self.ax2.set_ylabel("Rate / 1/s", color="blue")
-        self.ax3.set_xlabel(r"Time / ns")
-        self.ax5.set_ylabel("Amplitude / mV")
-        self.ax4.set_ylabel("Ch B / V", color="green")
-        self.ax4.yaxis.set_label_position("right") # repetition needed so that label keeps on the right, strange bug with new matplotlib version
-        self.ax5.yaxis.set_label_position("right")
-        
-        xloc = matplotlib.pyplot.MaxNLocator(self.daq.xticks)
-        self.ax1.xaxis.set_major_locator(xloc)
+            time_ch_mode=self.graph.time_ch_mode2
+            ax=self.axT2
 
-    def gain(self,x):
-        # PMT 6 by Pieper
-       return 4.3820810269624345e-9*x**(0.50531132059975381*10)
+        # no prepare plotting
+        if time_ch_mode != "None":
 
-##########################################################################################
-    def update_figure(self):
-        negativePulse=True
+            if ":" in  time_ch_mode:
+                channel=time_ch_mode.split(":")[0]
+                mode=time_ch_mode.split(":")[1]
+            else:
+                channel=""
 
-        self.ax1.clear()
-        self.ax2.clear()
-        self.ax3.clear()
-        self.ax4.clear()
-        self.ax5.clear()
+            if "Triggerrate" in time_ch_mode:
+                values = self.daq.rate
+                title = time_ch_mode
+                yLabel="Rate"
+                yUnit = "Hz"
+            elif "Std" in mode:
+                values = self.daq.std[channel]
+                title = "Standard deviation Ch. %s" % channel
+                yUnit = "V"
+                yLabel="Std. Deviation"
+            elif "Average" in mode:
+                values = self.daq.avg[channel]
+                title = "Average Ch. %s" % channel
+                yUnit = "V"
+                yLabel="Average"
+            # HWT add custom instructions for hardware
+            elif "Dummy" in mode:
+                values = self.hw.dummyVals
+                title = "External Dummy"
+                yUnit = "V"
+                yLabel="Dummies"
 
-        
-        if self.daq.isRunning() and len(self.daq.rate)>0:
+            
+            if "HW" == channel:
+                time=(np.array(self.hw.time) - self.daq.startthread) / 60 # from unix time to minutes since measurement started
+                # self.daq.startthread is common start point!
+            else:
+                time=(np.array(self.daq.time) - self.daq.startthread) / 60 # from unix time to minutes since measurement started
 
-            self.i+=1
+            ax.plot(time, values, "-o", 
+                    linewidth=1, markersize=1, 
+                    alpha=0.7, color="C%d"%nbr)
 
-            try:
-                # this fails the first time, but then it works
-                if self.i%2==0:
-                    self.log.debug("Set timer interval to %f seconds"%(self.daq.loopduration/1000)) # todo info in window
-                    self.timer.setInterval(int(self.daq.loopduration)) # adjust interval dynamically so that it stays at a useful level
-                    #argument is changed to be int by Megumi.C
-            except AttributeError as e:
-                self.log.debug( "WARNING: plotWidget has no timer")
+            #ax.yaxis.set_major_formatter(FormatStrFormatter('%.2e'))
+
+            if nbr==1:
+                ax.set_title(title, fontsize=8, weight="bold",loc="left", pad=3,)
+            else:
+                ax.text(0.01, 0.99, title, 
+                        transform=ax.transAxes, 
+                        horizontalalignment="left",
+                        verticalalignment="top",
+                        fontsize=8, 
+                        weight="bold",)
+            ax.set_ylabel("%s / %s" % (yLabel,yUnit))
+            ax.set_xlabel("Time / min") 
+        else: # nothing chosen
+            if nbr==1:
+                ax.set_title("Time development: No data chosen", fontsize=8, weight="bold",loc="left", pad=3,)
+            else:
+                ax.text(0.01, 0.99, "Time development: No data chosen", 
+                        transform=ax.transAxes, 
+                        horizontalalignment="left",
+                        verticalalignment="top",
+                        fontsize=8, 
+                        weight="bold",)
+            ax.set_ylabel("Value ")
+            ax.set_xlabel("Time / min") 
+
+
+    def plotHistogram(self):
+        if self.graph.hist_ch_mode != "None":
+
+            if self.graph.hist_ch_mode != "Triggerrate":
+                channel=self.graph.hist_ch_mode.split(":")[0]
+                mode=self.graph.hist_ch_mode.split(":")[1]
+            else:
+                channel=""
+                mode="Triggerrate"
+
+            if "Max" in mode:
+                values = self.daq.max_amp[channel]
+            elif "Min" in mode:
+                values = self.daq.min_amp[channel]
+            elif "Std" in mode:
+                values = self.daq.std[channel]
+            elif "Average" in mode:
+                values = self.daq.avg[channel]
+            elif "Area" in mode:
+                values = self.daq.area[channel]
+            elif "Triggerrate" in mode:
+                values = self.daq.rate
                 
-            # ----------------
-            # update timelike data here (otherwise problems might occur 
-            # when the array changes while this code executes
-            time=np.array(self.daq.blocktimes)-self.daq.blocktimes[0]
-            
-            # noise ###############################################################
-            
-            # put this before channel A to have it drawn in background
-            if self.daq.channelEnabled["D"]:
-                
-                try:
-                    noiseWfm=self.daq.savedNoise
-                    i=0
-                    for waveform in noiseWfm:
-                            wfmtime=(np.arange(0,len(waveform),1))* 1./self.daq.sampleRate*1e9
-                            self.ax5.plot(wfmtime, np.array(waveform)*1000, "-",
-                                          linewidth=1,
-                                          alpha=0.3,
-                                          color="gray"
-                                         )
-                            i+=1
-                            if i> self.daq.nowaveforms:
-                                break
-                    self.ax5.set_xlim(0,np.max(wfmtime))
-                    self.ax5.set_ylim(-self.daq.voltagerange["D"]*1000-(self.daq.offset["D"]*1000), self.daq.voltagerange["D"]*1000-(self.daq.offset["D"]*1000))
-                except AttributeError as e:
-                    #self.log.error(str(e))
-                    pass
-            # HV ###############################################################
-            
-            def monitorToHV(monitor):
-                return 1000*monitor # switch off calculation of high voltage to use this channel more generic, just convert to volts from millivolts
-                #return 3000.*monitor/5.
 
-            
-            if self.daq.channelEnabled["B"]:
-              channelB=self.daq.channelB
-              if type(channelB)==list or type(channelB)==np.ndarray:
-                timeB=time[:len(channelB)]
-                channelB=channelB[:len(timeB)] 
-                #cB=channelB
-                cB=[]
-                for capture in channelB:
-                    cB.append(np.mean(capture))
-                #print ("HV",np.mean(cB))
-                channelB=np.array(cB)
-                channelB=monitorToHV(channelB)
-                self.ax4.plot(timeB, channelB, "-o", color="green", linewidth=1, markersize=1, alpha=0.7)
-                from matplotlib.ticker import FormatStrFormatter
-                #self.ax4.yaxis.set_major_formatter(FormatStrFormatter('%.1f')) # make more generic
-                #self.ax4.set_ylim(-self.daq.voltagerange["B"]-self.daq.offset["B"], self.daq.voltagerange["B"]-self.daq.offset["B"])
-                meanHV=np.mean(channelB)
-            else: 
-                meanHV=1096.5 # 1.840 monitor voltage
-                meanHV=0 # use the channel more generic
-            
-            
-            # PMT ###############################################################
-            if self.daq.channelEnabled["A"]: 
-                rate=self.daq.rate
-                savedCaptures=self.daq.savedCaptures
-                #print(len(savedCaptures), "savedCaptures")
-                if not self.daq.showArea: #-------- Amplitude ------------------------
-                    if negativePulse:
-                        borders=(-self.daq.voltagerange["A"]*1000+self.daq.offset["A"]*1000,
-                             self.daq.voltagerange["A"]*1000+self.daq.offset["A"]*1000) # change from positive to negative offset for negative / positive pulses
-                    else:
-                        borders=(-self.daq.voltagerange["A"]*1000-self.daq.offset["A"]*1000,
-                             self.daq.voltagerange["A"]*1000-self.daq.offset["A"]*1000) # change from positive to negative offset for negative / positive pulses
-                    bins=50 # twice the resolution
-                    binning=[ i*float((borders[1]-borders[0]))/bins+borders[0] for i in range(bins+1)]
-                    binwidth=binning[1]-binning[0]
+            if len(values) > 0:
+                values=np.array(values)
+                values= np.hstack(values)
 
-                    # amplitude
-                    #self.ax1.axvline(-self.daq.triggervoltage*1000, color="k", linewidth=1.) # TODO nur wenn trigger auf channel A
-                    amplitudes = np.array(self.daq.amplitudes)
-                    if len(amplitudes)>0:
-                        amplitudes= np.hstack(amplitudes)
-                        if negativePulse:
-                            amplitudes= -np.array(amplitudes)*1000
-                        else:
-                            amplitudes= np.array(amplitudes)*1000 # -Volt -> +mVolt # change from negative to positive for negative / positive pulses
-                        histvals, binedges = np.histogram(np.array(amplitudes), bins=binning)
-                        self.ax1.bar(binedges[:-1], histvals, binwidth*0.9, facecolor="b", edgecolor="b")
-                        self.ax1.set_xlim(borders[0],borders[1])
-                        self.ax1.set_ylim(1.e-1, max(histvals)+max(histvals)*0.1)
-                        try: self.ax1.set_yscale("log", nonpositive="clip")
-                        except: pass
-                        # TODO error bars
-
-                else: #-------- Area ------------------------
-                    
-                    
-
-                    areas = np.array(self.daq.areas)
-                    #print (areas)
-                    if len(areas)>0:
-                        areas= np.hstack(areas)
-                        #print("Gain:",self.gain(meanHV))# 10073680.8734
-                        #gain=1.e7 # generic, can be corrected more easily but gives nicer numbers -> TODO change to charge in pC instead
-                        #areas=np.float64(areas) /50./(1.602*1e-19)/gain #/self.gain(meanHV) # change from negative to positive for negative / positive pulses
-                        areas=np.float64(areas)/50*1.e12 # -> convert to charge in pC
-                        #print(areas)
-                        if negativePulse:
-                            areas=-areas
-                        
-                        #print ("Areas graph",np.min(areas), np.max(areas))
-                        
-                        # good for a first guess:
-                        #borders=(0,np.max(areas)+np.max(areas)*0.1) 
-                        borders=(-1,5)
-                        # hard coded because it is hard to estimate a useful value from data, best option would be to correlate it with a known  which is hard if the PMT gain isn't known yet
-                       
-                        #borders=(-2e7,5e7) # pmt 1 for ampl PE
-                        #borders=(-1e7,2e7) # pmt 6 for ampl PE
-                        # borders=(-2e10,5e10) # pmt 6 for pure area
-                        #borders=(-1e-7, 5e-7)
-                        bins=128 # twice the resolution
-                        binning=[ i*float((borders[1]-borders[0]))/bins+borders[0] for i in range(bins+1)]
-                        binwidth=binning[1]-binning[0]
-                        
-                        histvals, binedges = np.histogram(np.array(areas), bins=binning)
-                        self.ax1.bar(binedges[:-1], histvals, binwidth*0.9, facecolor="b", edgecolor="b")
-                        '''
-                        self.ax1.set_xlim(borders[0],borders[1])
-                        self.ax1.set_ylim(1.e-1, max(histvals)+max(histvals)*0.1)                        
-                        '''
-                        try: self.ax1.set_yscale("log", nonpositive="clip")
-                        except: pass
-                        
-                        #for label in self.ax1.get_xticklabels()[::2]:
-                        #    label.set_visible(False)
-                        # TODO error bars
-                        
-
-                #--- rate -------------------------------------------
-
-                ratetime=time[:len(rate)]
-                rate=rate[:len(ratetime)]
-                ##print (len(ratetime), len(rate))
-                if len(rate)>0:
-                    self.ax2.plot(ratetime, rate, "-o", color="blue", linewidth=1, markersize=1, alpha=0.7)
-                    xlim1=0
-                    xlim2=max(ratetime)+max(ratetime)*0.1
-                    if xlim2 == xlim1:
-                        xlim2=1 # avoid an annoying error on the first entry after bootup
-                    self.ax2.set_xlim(0,xlim2)
-                    self.ax2.set_ylim(min(rate)-min(rate)*0.1,max(rate)+max(rate)*0.1)
-
-                #--- waveform -------------------------------------------
-                self.ax3.axhline(self.daq.triggervoltage*1000, color="k", linewidth=1.)
-                i=0
-                for waveform in savedCaptures:
-                        wfmtime=(np.arange(0,len(waveform),1))* 1./self.daq.sampleRate*1e9
-                        #print("Sampling Rate %0.1e" % self.daq.sampleRate)
-                        #print("Max wfmtime %d %d" % (np.max(wfmtime), len(wfmtime)))
-                        self.ax3.plot(wfmtime, np.array(waveform)*1000, "-",
-                                      linewidth=1,
-                                      alpha=0.5
-                                     )
-                        i+=1
-                        if i> self.daq.nowaveforms:
-                            break
-                self.ax3.set_ylim(-self.daq.voltagerange["A"]*1000-(self.daq.offset["A"]*1000), 
-                                   self.daq.voltagerange["A"]*1000-(self.daq.offset["A"]*1000))
-                self.ax3.set_xlim(0, np.max(wfmtime))
-            
-            
-
-            # 4th Channel  ###############################################################
-            #if self.daq.channelEnabled["C"]:
-            #  channelC=self.daq.channelC
-            #  if type(channelC)==list or type(channelC)==np.ndarray:
-            #    timeC=time[:len(channelC)]
-            #    channelC=channelC[:len(timeC)] 
-            #    channelC=np.array(channelC)
-                #self.ax4.plot(timeC, channelC, "-o", color="green", linewidth=1, markersize=1)
-                #self.ax4.set_ylim(-self.daq.voltagerange["C"]+self.daq.offset["C"], self.daq.voltagerange["C"]+self.daq.offset["C"])
-
-
-            # Text Info  ###############################################################
-
-            # TODO area outside the graphs for the text info stuff
-            if True:#try:
-                text=""
-                if self.daq.measureTemp and len(self.daq.temperatures)>0:
-
-                    if len(self.daq.temperatures[-1])==5:
-                        text+="Temperatures: \n"
-                        # show ERR if sensor offline (values above 4000 celsius)
-                        if self.daq.temperatures[-1][1]<50: text+=r"$%.1f^{\circ}$ " % self.daq.temperatures[-1][1]
-                        else: text+="ERR "
-                        if self.daq.temperatures[-1][2]<50: text+=r"$%.1f^{\circ}$ " % self.daq.temperatures[-1][2]
-                        else: text+="ERR "
-                        text+="\n"
-                        if self.daq.temperatures[-1][3]<50: text+=r"$%.1f^{\circ}$ " % self.daq.temperatures[-1][3]
-                        else: text+="ERR "
-                        if self.daq.temperatures[-1][4]<50: text+=r"$%.1f^{\circ}$ " % self.daq.temperatures[-1][4]
-                        else: text+="ERR "
-                        text+="\n\n"
-                    else:
-                        self.log.error("Not all temperature sensors read out. One might be broken or you have to disconnect and connect the USB Hygrosens device! %s" % (str(self.daq.temperatures[-1])))
-                        text+="Temperatures:\n"+r" $-^{\circ} \,\,\,-^{\circ}$"+\
-                            "\n"+"$-^{\circ} \,\,\, -^{\circ}$"+"\n\n"
+                if not mode in ["Triggerrate"]:
+                    # choose units
+                    xUnit="V"
+                    vRange=self.daq.voltagerange[channel]
+                    offSet=self.daq.offset[channel]/1000
+                    triggervoltage=self.daq.triggervoltage/1000
+                    if vRange < 1: # for convenience change to mV 
+                        xUnit="mV"
+                        vRange*=1000
+                        offSet*=1000
+                        triggervoltage*=1000
+                        values*=1000
                 else:
-                    text+="Temperatures:\n"+r" $-^{\circ} \,\,\,-^{\circ}$"+\
-                            "\n"+"$-^{\circ} \,\,\, -^{\circ}$"+"\n\n"
+                    xUnit = "Hz"
+                xUnit2=""
+                if "Area" in mode: 
+                    xUnit2+="* sec"
+                    # adjust unit so that you get more reasonable values
+                    if np.max(values)<1.e3:
+                        values*=1000
+                        xUnit2+="* ms"
+                    if np.max(values)<1.e3:
+                        values*=1000
+                        xUnit2+="* μs"
+                    if np.max(values)<1.e3:
+                        values*=1000
+                        xUnit2+="* ns"
 
-
-                if self.daq.measureLight and len(self.daq.lightsensor)>0:
-                    text+="Room Light:\n"+"%.1f mV \n\n" % self.daq.lightsensor[-1][1]
+                if mode in ["Max.Amplitude", "Min.Amplitude"]:
+                    # prepare histogram
+                    xBorders=(-vRange+offSet,vRange+offSet) # correct ylim for offset
                 else:
-                    text+="Room light: - mV"+"\n\n"
+                    mi=np.min(values)
+                    ma=np.max(values)
+                    xBorders=(mi-0.1*(ma-mi),ma+0.1*(ma-mi))
+                bins=int(len(values)*0.1) # reduce number of bins to account for few values
+                if bins<10: bins=10 # at least 10 bins
+                bins=min(50,bins) # max 50 bins
+                binning=[ i*float((xBorders[1]-xBorders[0]))/bins+xBorders[0] for i in range(bins+1)]
+                binwidth=binning[1]-binning[0]
+                histvals, binedges = np.histogram(values, bins=binning)
 
-                
-                text+="Freq/Int:\n"+\
-                        r" %.1e Hz /" % (self.daq.sampleRate) + \
-                        "\n"+ \
-                        "%.1e ns" %(1./self.daq.sampleRate*1e9) +\
-                        "\n\n"
+                # plot
+                self.axH.bar(binedges[:-1], histvals, binwidth*0.9, facecolor="C0", edgecolor="C0")
 
-                if len(rate)>0:
-                    text+="Rate: " + " %d Hz \n\n" % (rate[-1])
-                try:
-                    if len(channelB)>0:
-                        text+="Ch B: " + " %.1e V \n\n" % (channelB[-1]) # make more generic
+                if xBorders[0]!=xBorders[1]: # only issue at the first round
+                    self.axH.set_xlim(xBorders[0],xBorders[1])
+                #self.axH.set_ylim(1.e-1, max(histvals)+max(histvals)*0.1)
+
+                # trigger
+                if self.daq.triggerchannel == channel:
+                    self.axH.axvline(triggervoltage, color="red", linewidth=1., label="Trigger") 
+                    self.axH.legend(bbox_to_anchor=(0.65, 0.97, 0.35, 0.10), 
+                                ncol=1, mode="expand", frameon=False, 
+                                borderaxespad=0.,prop={'size': 6})
+
+
+
+                try: self.axH.set_yscale("log")
                 except: pass
 
-                if self.daq.channelEnabled["C"] and len(self.daq.channelC)>0:
-                        text+="Ch C:\n"+ \
-                                r" %.1f mV" % (self.daq.channelC[-1]*1000) +\
-                                "\n\n"
+                if channel!="":
+                    self.axH.set_title("Hist. %s Ch. %s" % (mode,channel), fontsize=8, loc="left", pad=3, weight="bold")
                 else:
-                        text+="Ch C:\n - mV\n\n"
+                    self.axH.set_title("Hist. of Rate", fontsize=8, loc="left", pad=3, weight="bold")
 
-                self.ax2.text(1.35,1., 
-                                 text, 
-                                 transform=self.ax4.transAxes,
-                                 horizontalalignment='left',
-                                 verticalalignment='top',
-                                 fontsize=7)
-            #except Exception as e:
-            #    self.log.error(str(e))
-            
-            self.layout()
-            self.draw()
+                self.axH.set_ylabel("Counts")
+                self.axH.set_xlabel("%s / %s %s" % (mode,xUnit, xUnit2))
+
+            else:
+                self.log.warn("No data in array")
+
+        else: # no data to plot
+            self.axH.set_title("Histogram: no channel chosen", fontsize=8, weight="bold",loc="left", pad=3,)
+            self.axH.set_ylabel("Counts")
+            self.axH.set_xlabel(r"Amplitude")
+
+
+    def plotWaveform(self):
+
+        # todo separate waveform and fft, because code has little overlap
         
+        if self.graph.raw_data_ch != "None":
+            channel=self.graph.raw_data_ch.split(":")[0]
+            mode=self.graph.raw_data_ch.split(":")[1]
 
+            if "waveform" in mode:
+                title="Waveform"
+                ylabel="Amplitude"
+                values=self.daq.lastWfm[channel]
+                # x-Axis / waveform duration
+                xUnit = "sec"
+                xLabel="Time"
+                wfmTime = np.arange(0, len(values[0]), 1) * self.daq.interval
+                if self.daq.interval < 1.e6: 
+                    wfmTime *= 1.e9
+                    xUnit = "ns"
+                elif self.daq.interval < 1.e3:
+                    wfmTime *= 1.e6
+                    xUnit = "μs"
+                elif self.daq.interval < 1:
+                    wfmTime *= 1.e3
+                    xUnit = "ms"
 
+                xvalues=wfmTime
 
+                # choose units
+                yUnit="V"
+                vRange=self.daq.voltagerange[channel]
+                offSet=self.daq.offset[channel]/1000
+                triggervoltage=self.daq.triggervoltage/1000
+                if vRange < 1: # for convenience change to mV 
+                    yUnit="mV"
+                    vRange*=1000
+                    offSet*=1000
+                    triggervoltage*=1000
+                    
+            else:
+                title="FFT"
+                ylabel="Amplitude"
+                values=np.array(self.daq.fft[channel][-1])
+                xUnit = "Hz"
+                xLabel="Frequency"
+                yUnit="V"
+                xvalues=self.daq.xfreq
 
+            # choose which waveforms to plot from the last round of waveforms
+            fakearray=np.arange(0,len(values), 1)
+            index=np.random.choice(fakearray, size=min(self.graph.raw_data_nbr, len(values)), replace=False)
+            vals=values[index]
+            #print(len(values), np.min(values), np.max(values))
+            #print(len(vals), np.min(vals), np.max(vals))
+            if yUnit=="mV": vals*=1000
+
+            
+
+            # plot
+            for wfm in vals:
+                #print(wfmTime)
+                #print(wfm)
+                self.axW.plot(xvalues, wfm, 
+                                linestyle="-", linewidth=1.0, alpha=0.5)
+
+            # trigger
+            if self.daq.triggerchannel == channel and title!="FFT":
+                self.axW.axhline(triggervoltage, color="red", linewidth=1., label="Trigger") 
+                self.axW.legend(bbox_to_anchor=(0.65, 0.97, 0.35, 0.10), 
+                            ncol=1, mode="expand", frameon=False, 
+                            borderaxespad=0.,prop={'size': 6})
+
+            # label
+            self.axW.set_title("%s Ch. %s" % (title,channel), 
+                                fontsize=8, loc="left", pad=3, weight="bold")
+            
+            self.axW.set_xlabel("%s / %s" % (xLabel,xUnit))
+            self.axW.set_ylabel("%s / %s" % (ylabel,yUnit))
+
+            # keep lims constant
+            if "waveform" in mode:
+                yBorders=(-vRange+offSet,vRange+offSet) # correct ylim for offset
+                #self.axW.set_ylim(tuple(yBorders))
+                self.axW.set_xlim(0, wfmTime[-1])
+            else:
+                try: self.axW.set_xscale("log")
+                except: pass
+
+            
+        else: # no data to plot
+            self.axW.set_title("Waveforms: No data chosen", fontsize=8, weight="bold",loc="left", pad=3,)
+            self.axW.set_xlabel("Time")
+            self.axW.set_ylabel("Amplitude")
+    # -------------------------------------------------------------------------
 
 

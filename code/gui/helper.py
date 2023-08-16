@@ -54,7 +54,9 @@ def setCheckbox(box, value):
     box.setChecked(bool(value))
 
 def setSelect(box, value):
+    #print("DEBUG: setSelect", value)
     index = box.findText(value, QtCore.Qt.MatchFixedString)
+    #print("Index",index, type(index))
     if index >= 0:
          box.setCurrentIndex(index)        
     return box
@@ -63,10 +65,13 @@ def setSelect(box, value):
 
 def recreateSelect(options, box, default):
     for entry in options:
-        select.addItem(entry)
-    index = select.findText(default, QtCore.Qt.MatchFixedString)
+        box.addItem(entry)
+    index = box.findText(default, QtCore.Qt.MatchFixedString)
     if index >= 0:
-         select.setCurrentIndex(index)        
+        box.setCurrentIndex(index)  
+    else:
+        box.setCurrentIndex(0)  
+    return index      
 
 # ----- Clear ----------------------------------
 

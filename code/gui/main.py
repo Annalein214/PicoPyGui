@@ -11,11 +11,14 @@ class CentralWidget(MyGui.QWidget):
     The inner layout of the application window
     initializes all sub-widgets and gives settings to those
     '''
-    def __init__(self, parent, log, daq, settings):
+    def __init__(self, parent, log, daq, settings, graph, hw):
         super(CentralWidget, self).__init__(parent)
         self.daq=daq
         self.log=log
         self.settings=settings
+        self.graph=graph
+        self.hw=hw
+        self.parent=parent
 
         # copy geometry information from parent:
         self.left_minimum_size=parent.left_minimum_size
@@ -43,9 +46,11 @@ class CentralWidget(MyGui.QWidget):
     def setConnections(self):
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.update_progressbar)
-        self.timer.start(1000)
+        self.timer.start(1000) # milliseconds?
         # after the thread of the daq is finished, the measurement should be stopped!
         self.daq.finished.connect(self.stopMeasurement) 
+        # scope tells the graph to update
+        self.daq.data_updated.connect(self.plot.update_figure)
 
     def leftSide(self):
         # left side will comprise the plot
@@ -56,8 +61,8 @@ class CentralWidget(MyGui.QWidget):
         
         # add the plot widget
         layout=MyGui.QVBoxLayout()
-        plot=plotWidget(self,self.log, self.daq)
-        layout.addWidget(plot)
+        self.plot=plotWidget(self,self.log, self.daq, self.graph, self.hw)
+        layout.addWidget(self.plot)
         box.setLayout(layout)
         return box
 
@@ -72,13 +77,19 @@ class CentralWidget(MyGui.QWidget):
 
         # TOP -------------------
         # the config widget is complicated therefore in another class
-        config=configWidget(self, self.log, self.daq, self.settings)
+        config=configWidget(self, self.log, self.daq, self.settings, self.graph, self.hw)
 
         # BOTTOM -------------------
+
+        label=MyGui.QLabel()
+        label.setText("Logbook")
         self.saveLog = MyGui.QLineEdit()
-        self.saveLog.setPlaceholderText("Enter log message and press ENTER")
+        self.logPlaceholder="Enter log message and press ENTER"
+        self.saveLog.setPlaceholderText(self.logPlaceholder)
         self.saveLog.returnPressed.connect(self.saveLogger)
 
+        label2=MyGui.QLabel()
+        label2.setText("Progress")
         self.progress = MyGui.QProgressBar(self)
         self.progress.setGeometry(200, 80, 250, 20)
 
@@ -87,49 +98,51 @@ class CentralWidget(MyGui.QWidget):
 
         # put together the right part
         layout.addWidget(config)
+        layout.addWidget(label)
         layout.addWidget(self.saveLog)
+        layout.addWidget(label2)
         layout.addWidget(self.progress)
         layout.addWidget(self.button)
         box.setLayout(layout)
         return box
 
-
-
-
-
-
-
     def saveLogger(self):
+        # if measurement is running, save to measurement log
         if self.daq.out!=None:
             log=self.daq.out
-        else:
+        else: # otherwise save to general log
             log=self.log
-        try:
-            log.msg("LMSG:"+str(self.saveLog.text())) # used a string here which is easily searchable
-        except:
-            self.log.msg("LMSG:"+str(self.saveLog.text())) # used a string here which is easily searchable
+        log.msg("LMSG: "+str(self.saveLog.text())) # used a string here which is easily searchable
+        # reset
         self.saveLog.setText("")
-        #self.saveLog.setPlaceholderText("Text is saved!")
-        #time.sleep(0.5)
-        self.saveLog.setPlaceholderText("Log Message: Press enter to save")
+        self.saveLog.setPlaceholderText(self.logPlaceholder)
 
 
     def update_progressbar(self):
         pass
-        ''' TODO
         if self.daq.isRunning():
-            self.progress.setValue(int(self.daq.progress))#argument is changed to be int by Megumi.C
+            self.progress.setValue(int(self.daq._progress))#argument is changed to be int by Megumi.C
         else:
             self.progress.setValue(0)
-        '''
 
     def startMeasurement(self):
-        if self.button.text()=="Start":
+        if self.button.text()=="Start":            
+            # link hw to daq here, cannot be done at initalization due to an egg and henn issue
+            self.daq.hw=self.hw
             if not self.daq.isRunning():
                     self.button.setText('Stop')
                     self.daq._threadIsStopped=False
-                    self.daq.start()
-                    self.log.debug("Measurement started.")
+                    if not self.hw.isRunning():
+                        self.hw._threadIsStopped=False
+                        self.daq.prepareAdministration() 
+                        self.hw.prepareAdministration()
+                        self.daq.start()
+                        self.hw.start()
+                        self.log.debug("Measurement started.")
+                        self.parent.statusBar().showMessage("Measurement running")
+
+                    else: 
+                        self.log.error("HW Measurement is running -> you cannot start it")
             else:
                 self.log.error("Measurement is  running -> you cannot start it.")
         else:
@@ -139,61 +152,66 @@ class CentralWidget(MyGui.QWidget):
         # this is executed twice when stopping a run somehow
         # but appart from the log print, the rest is not executed twice
 
-        self.log.debug("Stopping measurement...")
+        self.log.debug("Stopping measurement. Please wait...")
+        self.daq.out.debug("Stopping measurement with STOP button.")
+        self.hw.out.debug("Stopping HW measurement with STOP button.")
+        self.parent.statusBar().showMessage("Stopping measurement. Please wait...")
 
         if self.daq.isRunning():
-            '''
-             measurement is running -> Stop it
-            '''
+
+            # -- measurement is running -> Stop it
             self.daq._threadIsStopped=True # this stops the next loop
+            # wait until daq is finally stopped
             while self.daq.isRunning():
                 time.sleep(0.1)
             self.log.debug("Measurement stopped.")
-            '''
-            if self.daq.saveMeasurement:
-                self.daq.saveAll()
-                #self.daq.writeToDatenbank()
-                self.daq.saveMeasurement=False
-                self.out=None
-            else:
-                #self.askToSave()
+            
+            # --- check if it should be saved
+            if not self.daq.saveMeasurement:
                 text, ok = MyGui.QInputDialog.getText(self, 'Do you want to save?', 
                                             'Do you want to save this measurement?\n'+
                                             'You can enter a last Logbook message here:')
-                if ok:
+                if ok: 
+                    self.daq.saveMeasurement=True
+                    self.hw.saveMeasurement=True
                     self.daq.out.msg("LMSG:"+str(text))
-                    self.daq.saveAll()
-                    #self.daq.writeToDatenbank()
-                    self.daq.saveMeasurement=False
-                    self.daq.out=None
-                else:
-                    self.daq.deleteDir()
-                    self.log.info("Measurement not saved.")
-            '''
+                    self.hw.out.msg("LMSG:"+str(text))
+
+            # --- stop HW
+            if self.hw.isRunning():
+                self.hw._threadIsStopped=True
+                while self.daq.isRunning():
+                    time.sleep(0.1)
+            self.log.debug("HW Measurement stopped.")
+
+            # --- save or not
+            if self.daq.saveMeasurement==True:
+                self.daq.hourlyPlot.plotAll()
+                self.daq.saveAll()
+                self.hw.saveAll()
+                self.daq.copyLogfile()
+            else:
+                self.hw.deleteFile()
+                self.daq.deleteDir()
+                self.log.info("Measurement not saved.")
+
+        if self.hw.isRunning():
+            # this happens if the elapsed time has passed in daq
+            self.hw._threadIsStopped=True  # this stops the next loop
+ 
+            # wait until daq is finally stopped
+            while self.hw.isRunning():
+                time.sleep(0.1)
+            self.log.debug("HW Measurement stopped.")
+            if self.daq.saveMeasurement==True:
+                self.hw.saveAll()
+            else:
+                self.hw.deleteFile()
+                self.log.info("HW Measurement not saved.")
+
+        # reset start button
         if self.button.text()=="Stop":
             self.button.setText('Start')
             self.log.debug("Stop Measurement: Measurement button set to start.")
-            
-        
-    '''
-    def askToSave(self):
-       print("Ask")
-       msg = MyGui.QMessageBox()
-       msg.setIcon(MyGui.QMessageBox.Information)
+            self.parent.statusBar().showMessage("")
 
-       msg.setText("Do you want to save this measurement?")
-       #msg.setInformativeText("Do you want to save this measurement?")
-       msg.setWindowTitle("Save?")
-       #msg.setDetailedText("blub")
-       msg.setStandardButtons(MyGui.QMessageBox.Ok | MyGui.QMessageBox.Cancel)
-       msg.buttonClicked.connect(self.answerSave)
-       retval = msg.exec_()
-       print("value of pressed message box button:", retval)
-
-    def answerSave(self,i):
-       self.log.debug("Button pressed is:%s"%i.text() )
-       if i.text()=="OK":
-            self.daq.saveAll()
-            # reset
-            self.daq.saveMeasurement=False
-    '''

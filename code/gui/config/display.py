@@ -6,21 +6,25 @@ from code.gui.helper import *
 
 class displayConfigWidget(MyGui.QWidget):
     '''
-    trigger tab widget
+    display tab widget
     '''
-    def __init__(self, parent, log, daq, settings, graph):
-        super(scopeConfigWidget, self).__init__(parent)
+    def __init__(self, parent, log, daq, settings, graph, hw):
+        super(displayConfigWidget, self).__init__(parent)
+        self.parent=parent
         self.log=log
         self.daq=daq
         self.settings=settings
         self.graph=graph
+        self.hw=hw
 
     # -------------------------------------------------
         # layout
         wrapperLayout = MyGui.QVBoxLayout(self)
-        grid=MyGui.QGridLayout
+        grid=MyGui.QGridLayout()
 
-		# --- Live Examples ---
+        labelHintChange=createLabel("Changes can be done during \nmeasurement.")
+
+        # --- Live Examples ---
         labelRaw=createLabel("Show waveforms")
         options=self.getRawOptions()
         self.chooseRaw=createSelect(options, 
@@ -32,7 +36,7 @@ class displayConfigWidget(MyGui.QWidget):
 
         # --- Histogram ---
         labelHist=createLabel("Show histogram")
-	    options=self.getHistOptions()
+        options=self.getHistOptions()
         self.chooseHist=createSelect(options, 
                                         self.graph.hist_ch_mode, 
                                         self.updateDisplay)
@@ -40,7 +44,7 @@ class displayConfigWidget(MyGui.QWidget):
 
         # --- Time ---
         labelTime1=createLabel("Show time development")
-	    options=self.getTimeOptions()
+        options=self.getTimeOptions()
         self.chooseTime1=createSelect(options, 
                                         self.graph.time_ch_mode1, 
                                         self.updateDisplay)
@@ -52,7 +56,7 @@ class displayConfigWidget(MyGui.QWidget):
         # --- String ---
         labelStr=createLabel("Show as string")
         
-	    options=self.getStrOptions()
+        options=self.getStrOptions()
         self.chooseStr1=createSelect(options, 
                                         self.graph.str_ch_mode1, 
                                         self.updateDisplay)
@@ -68,10 +72,14 @@ class displayConfigWidget(MyGui.QWidget):
         self.chooseStr5=createSelect(options, 
                                         self.graph.str_ch_mode5, 
                                         self.updateDisplay)
+
+        labelHelp=createLabel("If you miss options, maybe channel is \nnot enabled?")
     # -------------------------------------------------
         # compose the layout
 
         c=0
+        grid.addWidget(labelHintChange,       c,0)
+        c+=1
         grid.addWidget(labelRaw,          c,0) # y, x
         grid.addWidget(self.chooseRaw,    c,1) 
         c+=1
@@ -96,6 +104,9 @@ class displayConfigWidget(MyGui.QWidget):
         grid.addWidget(self.chooseStr4,    c,1) 
         c+=1
         grid.addWidget(self.chooseStr5,    c,1) 
+        c+=1
+        grid.addWidget(labelHelp,       c,0)
+        
 
         wrapperLayout.addLayout(grid)
         wrapperLayout.addStretch()
@@ -104,14 +115,16 @@ class displayConfigWidget(MyGui.QWidget):
     # Update functions
 
     def updateDisplay(self):
-    	'''
-    	only use one function, so that it is easier to use from other widgets
-    	'''
+        '''
+        only use one function, so that it is easier to use from other widgets
+        '''
 
-    	self.graph.raw_data_ch_type=str(getValueSelect(self.chooseRaw))
-    	self.settings.saveSetting("raw_data_ch_type", self.graph.raw_data_ch_type)
+        #self.log.debug("Update Display")
 
-    	rawNbr = str(getTextInput(self.chooseRawNbr))
+        self.graph.raw_data_ch=str(getValueSelect(self.chooseRaw))
+        self.settings.saveSetting("raw_data_ch", self.graph.raw_data_ch)
+
+        rawNbr = str(getTextInput(self.chooseRawNbr))
         if rawNbr=="-" or rawNbr=="":# no wired effect when starting to type a negative number
             rawNbr=1
         try:
@@ -119,103 +132,175 @@ class displayConfigWidget(MyGui.QWidget):
         except ValueError as e:
             self.log.error("Could not convert string to int %s"%rawNbr)
             rawNbr=1
-            setText(self.chooseRawNbr,"1")
+
+        # should be below saved number of WFM
+        if self.graph.raw_data_ch!="None":
+            if rawNbr>self.daq.save_wfm_nbr[self.graph.raw_data_ch.split(":")[0]]:
+                rawNbr=self.daq.save_wfm_nbr[self.graph.raw_data_ch.split(":")[0]]
+                self.log.debug("Prevent choosing more than available")
+        
+        if rawNbr<=0:
+            self.log.error("Number of waveforms must be at least 1, you chose %d"%rawNbr)
+            rawNbr=1
+            
+        setText(self.chooseRawNbr,rawNbr)
         self.graph.raw_data_nbr=rawNbr
         self.settings.saveSetting("raw_data_nbr", self.graph.raw_data_nbr)
 
         self.graph.hist_ch_mode=str(getValueSelect(self.chooseHist))
-    	self.settings.saveSetting("hist_ch_mode", self.graph.hist_ch_mode)
+        self.settings.saveSetting("hist_ch_mode", self.graph.hist_ch_mode)
 
-    	self.graph.time_ch_mode1=str(getValueSelect(self.chooseTime1))
-    	self.settings.saveSetting("time_ch_mode1", self.graph.time_ch_mode1)
+        self.graph.time_ch_mode1=str(getValueSelect(self.chooseTime1))
+        self.settings.saveSetting("time_ch_mode1", self.graph.time_ch_mode1)
 
-    	self.graph.time_ch_mode2=str(getValueSelect(self.chooseTime2))
-    	if self.graph.time_ch_mode2==self.graph.time_ch_mode1:
-    		# prevent double work
-    		self.graph.time_ch_mode2=="None"
-    		setSelect(self.chooseTime2, self.graph.time_ch_mode2)
-    	self.settings.saveSetting("time_ch_mode2", self.graph.time_ch_mode2)
+        self.graph.time_ch_mode2=str(getValueSelect(self.chooseTime2))
+        if self.graph.time_ch_mode2==self.graph.time_ch_mode1:
+            # prevent double work
+            self.log.debug("Prevent double work, set Time 2 to None")
+            self.graph.time_ch_mode2=="None"
+            setSelect(self.chooseTime2, "None")# use string instead of variable, seems to not have been set in that time
+        self.settings.saveSetting("time_ch_mode2", self.graph.time_ch_mode2)
 
-    	# dont care about double work for strings
-    	self.graph.str_ch_mode1=str(getValueSelect(self.chooseStr1))
-    	self.settings.saveSetting("str_ch_mode1", self.graph.str_ch_mode1)
+        # dont care about double work for strings
+        self.graph.str_ch_mode1=str(getValueSelect(self.chooseStr1))
+        self.settings.saveSetting("str_ch_mode1", self.graph.str_ch_mode1)
 
-    	self.graph.str_ch_mode2=str(getValueSelect(self.chooseStr2))
-    	self.settings.saveSetting("str_ch_mode2", self.graph.str_ch_mode2)
+        self.graph.str_ch_mode2=str(getValueSelect(self.chooseStr2))
+        self.settings.saveSetting("str_ch_mode2", self.graph.str_ch_mode2)
 
-    	self.graph.str_ch_mode3=str(getValueSelect(self.chooseStr3))
-    	self.settings.saveSetting("str_ch_mode3", self.graph.str_ch_mode3)
+        self.graph.str_ch_mode3=str(getValueSelect(self.chooseStr3))
+        self.settings.saveSetting("str_ch_mode3", self.graph.str_ch_mode3)
 
-    	self.graph.str_ch_mode4=str(getValueSelect(self.chooseStr4))
-    	self.settings.saveSetting("str_ch_mode4", self.graph.str_ch_mode4)
+        self.graph.str_ch_mode4=str(getValueSelect(self.chooseStr4))
+        self.settings.saveSetting("str_ch_mode4", self.graph.str_ch_mode4)
 
-    	self.graph.str_ch_mode5=str(getValueSelect(self.chooseStr5))
-    	self.settings.saveSetting("str_ch_mode5", self.graph.str_ch_mode5)
+        self.graph.str_ch_mode5=str(getValueSelect(self.chooseStr5))
+        self.settings.saveSetting("str_ch_mode5", self.graph.str_ch_mode5)
+
+        #print("display", self.daq, type(self.daq))
 
 # ********************************************************************************
     # Update widget functions
 
 
-    def updateDisplayWidget(self):
-    	clearSelect(self.chooseRaw)
-    	options=self.getRawOptions()
-    	recreateSelect(options, self.chooseRaw, self.graph.raw_data_ch)
+    def renewDisplayWidget(self, index):
 
-    	# TODO Nbr of waveforms
+        #self.log.debug("Renew Display? %d %s"%(index, self.parent.tabText(index)))
+        # only update if this tab is opened
+        if self.parent.tabText(index)!="Display":
+            return
 
-    	clearSelect(self.chooseHist)
-    	options=self.getHistOptions()
-    	recreateSelect(options, self.chooseHist, self.graph.hist_ch_mode)
+        #self.log.debug("Renew Display!")
 
-    	# TODO Rest
+        # prevent updateDisplay from firing due to changing the select options
+        self.chooseRaw.blockSignals(True)
+        self.chooseRawNbr.blockSignals(True)
+        self.chooseHist.blockSignals(True)
+        self.chooseTime1.blockSignals(True)
+        self.chooseTime2.blockSignals(True)
+        self.chooseStr1.blockSignals(True)
+        self.chooseStr2.blockSignals(True)
+        self.chooseStr3.blockSignals(True)
+        self.chooseStr4.blockSignals(True)
+        self.chooseStr5.blockSignals(True)
 
-	def getRawOptions(self):
+        clearSelect(self.chooseRaw)
+        options=self.getRawOptions()
+        index=recreateSelect(options, self.chooseRaw, self.graph.raw_data_ch)
+
+        if self.graph.raw_data_ch!="None":
+            self.graph.raw_data_nbr=min(self.graph.raw_data_nbr,self.daq.save_wfm_nbr[self.graph.raw_data_ch.split(":")[0]])
+        setText(self.chooseRawNbr,self.graph.raw_data_nbr)
+
+        clearSelect(self.chooseHist)
+        options=self.getHistOptions()
+        recreateSelect(options, self.chooseHist, self.graph.hist_ch_mode)
+
+        clearSelect(self.chooseTime1)
+        clearSelect(self.chooseTime2)
+        options=self.getTimeOptions()
+        recreateSelect(options, self.chooseTime1, self.graph.time_ch_mode1)
+        recreateSelect(options, self.chooseTime2, self.graph.time_ch_mode2)
+
+        clearSelect(self.chooseStr1)
+        clearSelect(self.chooseStr2)
+        clearSelect(self.chooseStr3)
+        clearSelect(self.chooseStr4)
+        clearSelect(self.chooseStr5)
+        options=self.getStrOptions()
+        recreateSelect(options, self.chooseStr1, self.graph.str_ch_mode1)
+        recreateSelect(options, self.chooseStr2, self.graph.str_ch_mode2)
+        recreateSelect(options, self.chooseStr3, self.graph.str_ch_mode3)
+        recreateSelect(options, self.chooseStr4, self.graph.str_ch_mode4)
+        recreateSelect(options, self.chooseStr5, self.graph.str_ch_mode5)
+
+        # revive signals
+        self.chooseRaw.blockSignals(False)
+        self.chooseRawNbr.blockSignals(False)
+        self.chooseHist.blockSignals(False)
+        self.chooseTime1.blockSignals(False)
+        self.chooseTime2.blockSignals(False)
+        self.chooseStr1.blockSignals(False)
+        self.chooseStr2.blockSignals(False)
+        self.chooseStr3.blockSignals(False)
+        self.chooseStr4.blockSignals(False)
+        self.chooseStr5.blockSignals(False)
+
+        self.updateDisplay()
+
+    def getRawOptions(self):
         options=["None"]
         for i in range(self.daq.scope.NUM_CHANNELS):
-        	channel=list(self.daq.scope.CHANNELS)[i][0]
-        	if self.daq.save_wfm[channel]:
-            	options.append(channel+": waveform")
-            if self.daq.save_fft[channel]:
-            	options.append(channel+": FFT")
+            channel=list(self.daq.scope.CHANNELS)[i][0]
+            if self.daq.channelEnabled[channel]:
+                if self.daq.save_wfm[channel]:
+                    options.append(channel+":waveform")
+                #if self.daq.save_fft[channel]:
+                #    options.append(channel+":FFT")
         return options
 
-	def getHistOptions(self):
+    def getHistOptions(self):
 
-        options=["None"]
+        options=["None", "Triggerrate"]
         for i in range(self.daq.scope.NUM_CHANNELS):
-        	channel=list(self.daq.scope.CHANNELS)[i][0]
-        	if save_max_amp[channel]:
-            	options.append(channel+": Max Amplitude")
-            if save_min_amp[channel]:
-            	options.append(channel+": Min Amplitude")
-            if save_area[channel]:
-            	options.append(channel+": Area")
-            if save_avg_std[channel]:
-            	options.append(channel+": Average")
-            if save_avg_std[channel]:
-            	options.append(channel+": Std. Deviation")
+            channel=list(self.daq.scope.CHANNELS)[i][0]
+            if self.daq.channelEnabled[channel]:
+                if self.daq.save_max_amp[channel]:
+                    options.append(channel+":Max.Amplitude") # no spaces here! otherwise issue in settings.py:126
+                if self.daq.save_min_amp[channel]:
+                    options.append(channel+":Min.Amplitude")
+                if self.daq.save_area[channel]:
+                    options.append(channel+":Area")
+                if self.daq.save_avg_std[channel]:
+                    options.append(channel+":Average")
+                if self.daq.save_avg_std[channel]:
+                    options.append(channel+":Std. Deviation")
         return options
 
     def getTimeOptions(self):
-        options=["None"]
+        options=["None", "Triggerrate"]
         for i in range(self.daq.scope.NUM_CHANNELS):
-        	channel=list(self.daq.scope.CHANNELS)[i][0]
-        	options.append("Triggerrate")
-            if save_avg_std[channel]:
-            	options.append(channel+": Average")
-            if save_avg_std[channel]:
-            	options.append(channel+": Std. Deviation")
-        # TODO external DEVICES
+            channel=list(self.daq.scope.CHANNELS)[i][0]
+            if self.daq.channelEnabled[channel]:
+                if self.daq.save_avg_std[channel]:
+                    options.append(channel+":Average")
+                if self.daq.save_avg_std[channel]:
+                    options.append(channel+":Std.Deviation")
+        # HWT add external hardware options here
+        if self.hw.useDummy: 
+            options.append("HW:Dummy")
         return options
 
     def getStrOptions(self):
-        options=["None"]
+        options=["None", "Triggerrate"]
         for i in range(self.daq.scope.NUM_CHANNELS):
-        	channel=list(self.daq.scope.CHANNELS)[i][0]
-        	options.append("Latest Triggerrate")
-            if save_avg_std[channel]:
-            	options.append(channel+": Latest Average")
-            if save_avg_std[channel]:
-            	options.append(channel+": Latest Std. Dev.")
-        # TODO external DEVICES
+            channel=list(self.daq.scope.CHANNELS)[i][0]
+            if self.daq.channelEnabled[channel]:
+                if self.daq.save_avg_std[channel]:
+                    options.append(channel+":Average")
+                if self.daq.save_avg_std[channel]:
+                    options.append(channel+":Std.Dev.")
+        # HWT add external hardware options here
+        if self.hw.useDummy: 
+            options.append("HW:Dummy")
         return options

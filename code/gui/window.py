@@ -13,7 +13,7 @@ class ApplicationWindow(MyGui.QMainWindow):
     
     def __init__(self, daq, 
                     log, opts, 
-                    settings
+                    settings, graph, hw
                     ):
         MyGui.QMainWindow.__init__(self)
 
@@ -22,15 +22,16 @@ class ApplicationWindow(MyGui.QMainWindow):
         self.daq = daq
         self.opts=opts # currently not used, but might be useful to get sys.argv here
         self.settings=settings
+        self.graph=graph
+        self.hw=hw
         
         self.windowOutline()
         self.windowAttributes()
 
         # construct the inner part of the window
-        self.main_widget = CentralWidget(self, log, daq, settings)
+        self.main_widget = CentralWidget(self, log, daq, settings, graph, hw)
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
-
 
     def fileQuit(self):
         self.close()
@@ -54,7 +55,8 @@ class ApplicationWindow(MyGui.QMainWindow):
         self.menuBar().addSeparator()
         self.menuBar().addMenu(self.help_menu)
 
-        #self.statusBar().showMessage("Statusbar", 2000) TODO 
+        #used in centralwidget, not here 
+        #self.statusBar().showMessage("Statusbar", 2000) 
 
     def windowOutline(self):
 
@@ -66,18 +68,18 @@ class ApplicationWindow(MyGui.QMainWindow):
         self.log.info("Screen with size %i x %i px detected" %(screen_x,screen_y))
         
         # calculate geometry
-        self.left_minimum_size=(550,500)
+        self.left_minimum_size=(750,500)
         self.right_width=450
         self.right_tab_width=self.right_width-30 # not smaller than 30
-        self.right_tab_minimum_height=200
+        self.right_tab_minimum_height=700
         self.window_position=(50,50)
         self.window_size=[self.left_minimum_size[0]+self.right_width+50, 
                           max(self.left_minimum_size[1], self.right_tab_minimum_height)+50] # x, y
         self.log.info("Window minimum size is %d x %d px"%tuple(self.window_size))
 
         # above were minimal requirements. If you like a bigger window, change it here:
-        if self.window_size[1]<screen_y+400: self.window_size[1]+=400
-        if self.window_size[0]<screen_y+100: self.window_size[0]+=100
+        #if self.window_size[1]<screen_y+400: self.window_size[1]+=400
+        #if self.window_size[0]<screen_y+100: self.window_size[0]+=100
 
         # just to be sure, check size again
         if self.window_size[1]>screen_y or self.window_size[0]>screen_x:

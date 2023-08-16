@@ -211,7 +211,7 @@ class picoscope:
         [0x122 , "PICO_CHANNEL_DISABLED_DUE_TO_USB_POWERED", "USB Power not sufficient to power all channels."]]
 
     def __init__(self):
-        print("Init 6000")
+        print("DEBUG: Init 6000")
         self.dummy=False
         self.CHRange = [5.0] * self.NUM_CHANNELS
         self.CHOffset = [0.0] * self.NUM_CHANNELS
@@ -226,8 +226,8 @@ class picoscope:
             self.lib = cdll.LoadLibrary("lib" + self.LIBNAME + ".so.2")
         elif  platform.system()=="Darwin":
             from ctypes import cdll
-            print("You seem to be on a Mac. If the following fails do:\n$ export DYLD_FALLBACK_LIBRARY_PATH=/Applications/PicoScope6.app/Contents/Resources/lib/")
-            print("For PicoScope 7: export DYLD_FALLBACK_LIBRARY_PATH=/Applications/PicoScope_XXX.app/Contents/Resources/")
+            print("\tYou seem to be on a Mac. If the following fails do: $ export DYLD_FALLBACK_LIBRARY_PATH=/Applications/PicoScope6.app/Contents/Resources/lib/")
+            print("\tFor PicoScope 7: export DYLD_FALLBACK_LIBRARY_PATH=/Applications/PicoScope_XXX.app/Contents/Resources/")
             self.lib = cdll.LoadLibrary("lib" + self.LIBNAME + ".dylib")
         else:
             from ctypes import windll
@@ -255,7 +255,7 @@ class picoscope:
             return self.MAXOFFSETDC[voltagerange]
         else:
             return self.MAXOFFSETAC[voltagerange]
-            
+
     def checkResult(self, ec):
         """ Check result of function calls, raise exception if not 0. """
         if ec == 0:

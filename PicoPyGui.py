@@ -15,10 +15,12 @@ from PyQt5 import QtWidgets
 MyGui=QtWidgets
 # custom
 from code.gui.window import ApplicationWindow
+from code.gui.graph import graph
 
 # load hardware
-from code.daq.main import daq
-# TODO
+from code.daq import daq
+from code.sensors.main import external
+
 
 # -----------------------------------------------------------------------------
 def main(opts, log):
@@ -39,10 +41,17 @@ def main(opts, log):
 
     # initialize picoscope class (handles connect variable itself)
     # connect all external hardware with picoscope
-    scope=daq(log, opts, settings) # might set opts.test to true if no device is found
+    scope=daq(log, opts, settings) 
+    # this function might set opts.test to true if no device is found
+    # this function later also gets a reference to hw
+
+    # initialize graph class (stores some important variables which are also used by GUI)
+    graf=graph(log, opts, settings)
+
+    # initialize external hardware class
+    hw = external(log, opts, settings, scope)
 
     # start GUI or terminal
-
     if opts.konsole==False:
         app = MyGui.QApplication(sys.argv)
         app.setQuitOnLastWindowClosed(True)
@@ -51,7 +60,9 @@ def main(opts, log):
         gui=ApplicationWindow(scope, 
                                 log, 
                                 opts, 
-                                settings
+                                settings,
+                                graf,
+                                hw
                                 )
         gui.show()
         log.debug("Window is set up")

@@ -21,6 +21,8 @@ class channelConfigWidget(MyGui.QWidget):
         wrapperLayout = MyGui.QVBoxLayout(self)
         grid=MyGui.QGridLayout()
        
+        labelHintChange=createLabel("Changes only take effect in \nthe next measurement.")
+
         # --- Voltage ---
         labelVoltage=createLabel("Voltage Range")
         options=[]
@@ -65,17 +67,19 @@ class channelConfigWidget(MyGui.QWidget):
         self.chooseAvgStd=createCheckbox("Average, standard deviation", # don't change name, it is processed elsewhere
                             self.daq.save_avg_std[self.channel],
                             self.updateAnalysis)
-        self.chooseFFT=createCheckbox("Simple FFT (data+CPU heavy!)", # don't change name, it is processed elsewhere
-                            self.daq.save_fft[self.channel],
-                            self.updateAnalysis)
-        labelFFTnbr= createLabel("Number of FFT to save")
-        self.chooseFFTNbr=createTextInput(self.daq.save_fft_nbr[self.channel], self.updateAnalysis)
+        #self.chooseFFT=createCheckbox("Simple FFT (data+CPU heavy!)", # don't change name, it is processed elsewhere
+        #                    self.daq.save_fft[self.channel],
+        #                    self.updateAnalysis)
+        #labelFFTnbr= createLabel("Number of FFT to save")
+        #self.chooseFFTNbr=createTextInput(self.daq.save_fft_nbr[self.channel], self.updateAnalysis)
 
-        labelNbrHint = createLabel("If you choose 0 waveforms or \nfft to save, all will be saved. \nThis is very data/CPU heavy!")
+        labelNbrHint = createLabel("If you choose 0 waveforms \nor fft to save, all will be \nsaved. This is very data/CPU \nheavy!")
 
         # -------------------------------------------------
         # compose the layout
         c=0
+        grid.addWidget(labelHintChange,       c,0)
+        c+=1
         grid.addWidget(labelVoltage,          c,0) # y, x
         grid.addWidget(self.chooseVoltage,    c,1) 
         c+=1
@@ -104,10 +108,10 @@ class channelConfigWidget(MyGui.QWidget):
         c+=1
         grid.addWidget(self.chooseAvgStd,             c,1)
         c+=1
-        grid.addWidget(self.chooseFFT,             c,1)
-        c+=1
-        grid.addWidget(labelFFTnbr,             c,0)
-        grid.addWidget(self.chooseFFTNbr,             c,1)
+        #grid.addWidget(self.chooseFFT,             c,1)
+        #c+=1
+        #grid.addWidget(labelFFTnbr,             c,0)
+        #grid.addWidget(self.chooseFFTNbr,             c,1)
         c+=1
         grid.addWidget(labelNbrHint,             c,1)
         c+=1
@@ -125,20 +129,33 @@ class channelConfigWidget(MyGui.QWidget):
         self.daq.save_min_amp[self.channel]=getCheckboxEnabled(self.chooseMinAmp)
         self.daq.save_area[self.channel]=getCheckboxEnabled(self.chooseMaxArea)
         self.daq.save_avg_std[self.channel]=getCheckboxEnabled(self.chooseAvgStd)
-        self.daq.save_fft[self.channel]=getCheckboxEnabled(self.chooseFFT)
+        #self.daq.save_fft[self.channel]=getCheckboxEnabled(self.chooseFFT)
 
         self.settings.saveSetting("save_wfm."+self.channel, self.daq.save_wfm[self.channel])
         self.settings.saveSetting("save_max_amp."+self.channel, self.daq.save_max_amp[self.channel])
         self.settings.saveSetting("save_min_amp."+self.channel, self.daq.save_min_amp[self.channel])
         self.settings.saveSetting("save_area."+self.channel, self.daq.save_area[self.channel])
         self.settings.saveSetting("save_avg_std."+self.channel, self.daq.save_avg_std[self.channel])
-        self.settings.saveSetting("save_fft."+self.channel, self.daq.save_fft[self.channel])
+        #self.settings.saveSetting("save_fft."+self.channel, self.daq.save_fft[self.channel])
 
-        self.daq.save_wfm_nbr[self.channel]=int(getTextInput(self.chooseWfmNbr))
-        self.daq.save_fft_nbr[self.channel]=int(getTextInput(self.chooseFFTNbr))
+        wfmnbr=int(getTextInput(self.chooseWfmNbr))
+        if wfmnbr=="-" or wfmnbr=="":
+            wfmnbr=1
+        try:
+            wfmnbr=int(float(wfmnbr))
+        except ValueError as e:
+            self.log.error("Could not convert string to int %s"%wfmnbr)
+            wfmnbr=1
+
+        if wfmnbr<1:
+            self.log.error("Save at least one waveform or disable waveforms")
+            wfmnbr=1
+        setText(self.chooseWfmNbr,wfmnbr)
+        self.daq.save_wfm_nbr[self.channel]=wfmnbr
+        #self.daq.save_fft_nbr[self.channel]=int(getTextInput(self.chooseFFTNbr))
 
         self.settings.saveSetting("save_wfm_nbr."+self.channel, self.daq.save_wfm_nbr[self.channel])
-        self.settings.saveSetting("save_fft_nbr."+self.channel, self.daq.save_fft_nbr[self.channel])
+        #self.settings.saveSetting("save_fft_nbr."+self.channel, self.daq.save_fft_nbr[self.channel])
 
 
 
@@ -166,7 +183,7 @@ class channelConfigWidget(MyGui.QWidget):
             offset=maxOffset
 
         self.chooseOffset.setText(str(offset))
-        self.daq.offset[self.channel]=0
+        self.daq.offset[self.channel]=offset
         # save value to settings
         self.settings.saveSetting("offset."+self.channel, offset)
 

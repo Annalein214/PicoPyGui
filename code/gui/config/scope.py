@@ -20,6 +20,8 @@ class scopeConfigWidget(MyGui.QWidget):
         wrapperLayout = MyGui.QVBoxLayout(self)
         grid=MyGui.QGridLayout()
 
+        labelHintChange=createLabel("Changes only take effect in \nthe next measurement.")
+
         # --- Channel ---
         labelChannel=createLabel("Trigger Channel")
         options=[]
@@ -51,10 +53,10 @@ class scopeConfigWidget(MyGui.QWidget):
         self.chooseDelay = createTextInput(self.daq.triggerdelay, self.updateDelay)
         
         labelHintDelay = createLabel("Note: + will shift trigger to left. \n"+\
-                                     "Default at 0 is a 10% shift to right. \n"+\
-                                     "Make sure you don't choose a value \n"+\
-                                     "larger than 10% otherwise the \n"+\
-                                     "waveform is shifted out of the \n"+\
+                                     "Default at 0 is a 10% shift to \nright. "+\
+                                     "Make sure you don't \nchoose a value "+\
+                                     "larger than \n10% otherwise the "+\
+                                     "waveform \nis shifted out of the \n"+\
                                      "analysis window.")
         # --- Timeout ---
         labelTimeout = createLabel("Timeout [ms]")
@@ -102,6 +104,8 @@ class scopeConfigWidget(MyGui.QWidget):
         # compose the layout
 
         c=0
+        grid.addWidget(labelHintChange,       c,0)
+        c+=1
         grid.addWidget(labelChannel,          c,0) # y, x
         grid.addWidget(self.chooseChannel,    c,1) 
         c+=1
@@ -225,8 +229,8 @@ class scopeConfigWidget(MyGui.QWidget):
         except ValueError as e:
             self.log.error("Could not convert string to int %s"%captures)
             captures=0
-            setText(self.chooseCaptures,"1.e9")
-        self.daq.captures=0
+            setText(self.chooseCaptures,"0")
+        self.daq.captures=captures
         self.settings.saveSetting("captures", self.daq.captures)
         # connection between samples and captures can only be done during runtime!        
 

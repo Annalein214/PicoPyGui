@@ -31,6 +31,13 @@ Then start in the Terminal with
 * the deadtime of the 3406D seems to be around 2.2 microseconds, see below. This means that you cannot take rate measurements for > TODO Hz. 
 * data is not automatically directly saved. The user can decide when stopping the measurement. However, after 1 hour the data is saved hourly automatically. Per measurement a new directory is created and data and figures are saved there.
 * you can choose to terminate measurement after a certain number of minutes. If you choose 0 min, the measurement will continue until you manually stop
+* all values of the tab "Display" can be changed live during a run, so all values can be checked live
+* user log entries can be entered anytime in the text input above the start/stop button
+
+# How to add external hardware 
+
+In order to measure with external sensors, apart from the picoscope, within the same program and display the results on the same time axis, you need to provide a script which outputs the values once executed. 
+Search in the code for the string ”HWT" to find all locations where you need to add special code in order to add your external sensors.
 
 # How to measure deadtime
 * TODO
@@ -51,14 +58,14 @@ Then start in the Terminal with
 * time is exchanged by time_ns in order to improve accuracy for the rate measurement
 
 # TODO
-* check the min window sizes!
 * check 3000 properties
 * trigger delay -> understand it
 * combine picoscope types to one class with sub-classes implementing the changes
+* save all settings in settings.py class instead of daq and graph (reduces setter commands!)
+* plots live verändern möglich machen
 
 # Currently working on
-* check if GUI and threads can be handled better: daq in thread, ggf analyse in another thread to make plotting quicker? plotting in a thread?
-- check if connection of central widget can be moved to daq? 
-- clean connections of central widget and daq
-- check if graph or analysis can go into thread
-- check if other hardware can go into thread and not into daq
+- fft bug
+- check: daq units of offset and triggervoltage
+- beenden sicher machen mit strg-w / strg-c etc.
+- external Hardware

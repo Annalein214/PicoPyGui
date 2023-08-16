@@ -22,7 +22,7 @@ class Settings:
         self.attr={}
         self.loadSettings() # they are saved into self.attr for now
         self.log.msg("Loaded settings from file %s"%self.filename)
-        print(self.attr)
+        #print(self.attr)
         
     def saveSetting(self, var, val):
         # first save in our local repo
