@@ -77,6 +77,35 @@ class hardwareConfigWidget(MyGui.QWidget):
         # HWT handle user choice here
 
         useDummy=getCheckboxEnabled(self.chooseDummy)
+        if ":" in self.settings.time_ch_mode1:
+                ch,mode=self.settings.time_ch_mode1.split(":")
+                if mode=="Dummy" and not useDummy:
+                    self.settings.saveSetting("time_ch_mode1", "None")
+        if ":" in self.settings.time_ch_mode2:
+                ch,mode=self.settings.time_ch_mode2.split(":")
+                if mode=="Dummy" and not useDummy:
+                    self.settings.saveSetting("time_ch_mode2", "None")
+        if ":" in self.settings.str_ch_mode1:
+                ch,mode=self.settings.str_ch_mode1.split(":")
+                if mode=="Dummy" and not useDummy:
+                    self.settings.saveSetting("str_ch_mode1", "None")
+        if ":" in self.settings.str_ch_mode2:
+                ch,mode=self.settings.str_ch_mode2.split(":")
+                if mode=="Dummy" and not useDummy:
+                    self.settings.saveSetting("str_ch_mode2", "None")
+        if ":" in self.settings.str_ch_mode3:
+                ch,mode=self.settings.str_ch_mode3.split(":")
+                if mode=="Dummy" and not useDummy:
+                    self.settings.saveSetting("str_ch_mode3", "None")
+        if ":" in self.settings.str_ch_mode4:
+                ch,mode=self.settings.str_ch_mode4.split(":")
+                if mode=="Dummy" and not useDummy:
+                    self.settings.saveSetting("str_ch_mode4", "None")
+        if ":" in self.settings.str_ch_mode5:
+                ch,mode=self.settings.str_ch_mode5.split(":")
+                if mode=="Dummy" and not useDummy:
+                    self.settings.saveSetting("str_ch_mode5", "None")
+        # todo the handling of all these settings could be made easier somehow
         self.settings.saveSetting("useDummy", useDummy)
 
 

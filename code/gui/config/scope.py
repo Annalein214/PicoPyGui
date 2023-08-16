@@ -300,6 +300,40 @@ class scopeConfigWidget(MyGui.QWidget):
             self.chEnNum+=en
             #self.settings.channelEnabled[chName]=en
         
+            if ":" in self.settings.hist_ch_mode:
+                ch,mode=self.settings.hist_ch_mode.split(":")
+                if ch==chName and en==False:
+                    self.settings.saveSetting("hist_ch_mode", "None")
+            if ":" in self.settings.time_ch_mode1:
+                ch,mode=self.settings.time_ch_mode1.split(":")
+                if ch==chName and en==False:
+                    self.settings.saveSetting("time_ch_mode1", "None")
+            if ":" in self.settings.time_ch_mode2:
+                ch,mode=self.settings.time_ch_mode2.split(":")
+                if ch==chName and en==False:
+                    self.settings.saveSetting("time_ch_mode2", "None")
+            if ":" in self.settings.str_ch_mode1:
+                ch,mode=self.settings.str_ch_mode1.split(":")
+                if ch==chName and en==False:
+                    self.settings.saveSetting("str_ch_mode1", "None")
+            if ":" in self.settings.str_ch_mode2:
+                ch,mode=self.settings.str_ch_mode2.split(":")
+                if ch==chName and en==False:
+                    self.settings.saveSetting("str_ch_mode2", "None")
+            if ":" in self.settings.str_ch_mode3:
+                ch,mode=self.settings.str_ch_mode3.split(":")
+                if ch==chName and en==False:
+                    self.settings.saveSetting("str_ch_mode3", "None")
+            if ":" in self.settings.str_ch_mode4:
+                ch,mode=self.settings.str_ch_mode4.split(":")
+                if ch==chName and en==False:
+                    self.settings.saveSetting("str_ch_mode4", "None")
+            if ":" in self.settings.str_ch_mode5:
+                ch,mode=self.settings.str_ch_mode5.split(":")
+                if ch==chName and en==False:
+                    self.settings.saveSetting("str_ch_mode5", "None")
+
+            print("Enabled", chName, en)
             self.settings.saveSetting("channelEnabled.%s"%chName,en)
         
         self.updateFrequency()

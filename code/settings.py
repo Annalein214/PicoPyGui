@@ -28,16 +28,22 @@ class Settings:
         # TODO automize that this is also set as varible of this class
 
         # save var as class attribute with name var and value val 
-        setattr(self,var,val)
+        
 
         # first save in our local repo
         if "." in var: # dictionaries
             d,e=var.split(".")
             if d not in self.attr:
                 self.attr[d]={}
+                setattr(self,d,{e:val})
+            else:
+                temp=getattr(self,d)
+                temp[e]=val
+                setattr(self,d,temp)
             self.attr[d][e]=val
         else:
             self.attr[var]=val
+            setattr(self,var,val)
 
         # now save into the file, sadly full file needs to be re-written
         self.setfile=open(self.filename, "w")

@@ -125,19 +125,75 @@ class channelConfigWidget(MyGui.QWidget):
 
     def updateAnalysis(self):
         # todo a bit repetitive
-        self.settings.save_wfm[self.channel]=getCheckboxEnabled(self.chooseWfm)
-        self.settings.save_max_amp[self.channel]=getCheckboxEnabled(self.chooseMaxAmp)
-        self.settings.save_min_amp[self.channel]=getCheckboxEnabled(self.chooseMinAmp)
-        self.settings.save_area[self.channel]=getCheckboxEnabled(self.chooseMaxArea)
-        self.settings.save_avg_std[self.channel]=getCheckboxEnabled(self.chooseAvgStd)
-        #self.settings.save_fft[self.channel]=getCheckboxEnabled(self.chooseFFT)
+        save_wfm=getCheckboxEnabled(self.chooseWfm)
+        # prevent issue if values are changed at runtime in channel but display is not executed before run starts
+        if not save_wfm and self.settings.raw_data_ch.split(":")[0]==self.channel:
+            self.settings.saveSetting("raw_data_ch", "None")
+        self.settings.saveSetting("save_wfm."+self.channel, save_wfm)
 
-        self.settings.saveSetting("save_wfm."+self.channel, self.settings.save_wfm[self.channel])
-        self.settings.saveSetting("save_max_amp."+self.channel, self.settings.save_max_amp[self.channel])
-        self.settings.saveSetting("save_min_amp."+self.channel, self.settings.save_min_amp[self.channel])
-        self.settings.saveSetting("save_area."+self.channel, self.settings.save_area[self.channel])
-        self.settings.saveSetting("save_avg_std."+self.channel, self.settings.save_avg_std[self.channel])
+
+
+        save_max_amp=getCheckboxEnabled(self.chooseMaxAmp)
+        if ":" in self.settings.hist_ch_mode:
+            ch,mode=self.settings.hist_ch_mode.split(":")
+            if not save_max_amp and ch==self.channel and "Max" in mode:
+                self.settings.saveSetting("hist_ch_mode", "None")
+        self.settings.saveSetting("save_max_amp."+self.channel, save_max_amp)
+
+
+        save_min_amp=getCheckboxEnabled(self.chooseMinAmp)
+        if ":" in self.settings.hist_ch_mode:
+            ch,mode=self.settings.hist_ch_mode.split(":")
+            if not save_min_amp and ch==self.channel and "Min" in mode:
+                self.settings.saveSetting("hist_ch_mode", "None")
+        self.settings.saveSetting("save_min_amp."+self.channel, save_min_amp)
+
+        save_area=getCheckboxEnabled(self.chooseMaxArea)
+        if ":" in self.settings.hist_ch_mode:
+            ch,mode=self.settings.hist_ch_mode.split(":")
+            if not save_area and ch==self.channel and "Area" in mode:
+                self.settings.saveSetting("hist_ch_mode", "None")
+        self.settings.saveSetting("save_area."+self.channel, save_area)
+
+        save_avg_std=getCheckboxEnabled(self.chooseAvgStd)
+        if ":" in self.settings.hist_ch_mode:
+            ch,mode=self.settings.hist_ch_mode.split(":")
+            if not save_avg_std and ch==self.channel and ("Std" in mode or "Average" in mode):
+                self.settings.saveSetting("hist_ch_mode", "None")
+        if ":" in self.settings.time_ch_mode1:
+            ch,mode=self.settings.time_ch_mode1.split(":")
+            if not save_avg_std and ch==self.channel and ("Std" in mode or "Average" in mode):
+                self.settings.saveSetting("time_ch_mode1", "None")
+        if ":" in self.settings.time_ch_mode2:
+            ch,mode=self.settings.time_ch_mode2.split(":")
+            if not save_avg_std and ch==self.channel and ("Std" in mode or "Average" in mode):
+                self.settings.saveSetting("time_ch_mode2", "None")
+        if ":" in self.settings.str_ch_mode1:
+            ch,mode=self.settings.str_ch_mode1.split(":")
+            if not save_avg_std and ch==self.channel and ("Std" in mode or "Average" in mode):
+                self.settings.saveSetting("str_ch_mode1", "None")
+        if ":" in self.settings.str_ch_mode2:
+            ch,mode=self.settings.str_ch_mode2.split(":")
+            if not save_avg_std and ch==self.channel and ("Std" in mode or "Average" in mode):
+                self.settings.saveSetting("str_ch_mode2", "None")
+        if ":" in self.settings.str_ch_mode3:
+            ch,mode=self.settings.str_ch_mode3.split(":")
+            if not save_avg_std and ch==self.channel and ("Std" in mode or "Average" in mode):
+                self.settings.saveSetting("str_ch_mode3", "None")
+        if ":" in self.settings.str_ch_mode4:
+            ch,mode=self.settings.str_ch_mode4.split(":")
+            if not save_avg_std and ch==self.channel and ("Std" in mode or "Average" in mode):
+                self.settings.saveSetting("str_ch_mode4", "None")
+        if ":" in self.settings.str_ch_mode5:
+            ch,mode=self.settings.str_ch_mode5.split(":")
+            if not save_avg_std and ch==self.channel and ("Std" in mode or "Average" in mode):
+                self.settings.saveSetting("str_ch_mode5", "None")
+        self.settings.saveSetting("save_avg_std."+self.channel, save_avg_std)
+        
+        #self.settings.save_fft[self.channel]=getCheckboxEnabled(self.chooseFFT)
         #self.settings.saveSetting("save_fft."+self.channel, self.settings.save_fft[self.channel])
+
+
 
         wfmnbr=int(getTextInput(self.chooseWfmNbr))
         if wfmnbr=="-" or wfmnbr=="":

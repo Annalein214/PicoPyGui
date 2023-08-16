@@ -68,7 +68,8 @@ class plot:
         rows=math.ceil(math.sqrt(total)); cols=math.ceil(total/rows)
         fig = plt.figure("Name", figsize=(3*cols,2*rows)) 
         axes=[]
-        '''
+        # SF save until here
+        
         for i in range(total):
             if i<rows:
                 r=i; c=0
@@ -77,7 +78,7 @@ class plot:
             #print(i,r,c)
             axes.append(plt.subplot2grid((rows,cols), (r,c)))
             axes[i].grid(True)
-
+        '''
 
         plotI=0
         for i in range(self.daq.scope.NUM_CHANNELS):
