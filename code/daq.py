@@ -156,7 +156,7 @@ class daq(QThread):
 
             # --- stop the loop ---
             #print(self.endtime - self.startthread, self.settings.measurementduration*60)
-            if self.settings.measurementduration!=0 and ((self.settings.measurementduration*3) < (self.endtime - self.startthread)):
+            if self.settings.measurementduration!=0 and ((self.settings.measurementduration*60) < (self.endtime - self.startthread)):
                 # stop hw thread to ensure data integrity => no solution for segmentation fault
                 # keep it anyhow
                 self.hw._threadIsStopped=True

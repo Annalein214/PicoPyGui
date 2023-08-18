@@ -21,6 +21,7 @@ With GUI: Start in the Terminal with
 
 Without GUI: Change the settings in settings.cfg according to your needs. 
 Then start in the Terminal with 
+(NOT TESTED!)
 * python3 PicoGui.py -k [--options]
 
 ## Operation
@@ -42,33 +43,29 @@ Search in the code for the string ”HWT" to find all locations where you need t
 # How to measure deadtime
 * TODO
 
-
 # How to support for add other picoscopes
 * copy picoscopeXXXX.py to picoscopeNNNN.py where XXXX is one of the existing scripts and NNNN is the new name
 * replaced all psXXXX with psNNNN
 * check and possibly add or remove functionality (e.g. DC50 coupling)
 * change numbers in timebase functions according to values in the picoscope programmers guide
 
-# Missing features
-* Digital Ports on ps3000a not working yet
-* this program does not include signal generator functionality
-
 # Major changes from previous version
+This is the previous version: https://github.com/Annalein214/picogui
+It grow to large and was hard to maintain. New version should be simpler with even more features.
 * sleeptime for a run is set to 0.1ms instead of 1ms in order to improve accuracy for the rate measurement
 * time is exchanged by time_ns in order to improve accuracy for the rate measurement
 
-# TODO
+# Missing features (please contect me for more items)
+* Digital Ports on ps3000a not working yet
+* this program does not include signal generator functionality
+
+# Todo list (please contect me for more items)
+* test konsole mode
 * check 3000 properties
 * combine picoscope types to one class with sub-classes implementing the changes
 * plots live verändern möglich machen
 * fft currently disabled
 * check pyqtgraph, could be nicer
-
-# Currently working on
-- fft bug
-- check: daq units of offset and triggervoltage
-
-
 
 
 
