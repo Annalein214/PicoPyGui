@@ -293,6 +293,8 @@ class displayConfigWidget(MyGui.QWidget):
         # HWT add external hardware options here
         if self.settings.useDummy: 
             options.append("HW:Dummy")
+        if self.settings.useLightsensor: 
+            options.append("HW:Lightsensor")
         return options
 
     def getStrOptions(self):
@@ -307,4 +309,6 @@ class displayConfigWidget(MyGui.QWidget):
         # HWT add external hardware options here
         if self.settings.useDummy: 
             options.append("HW:Dummy")
+        if self.settings.useLightsensor: 
+            options.append("HW:Lightsensor")
         return options

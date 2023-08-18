@@ -35,6 +35,10 @@ class hardwareConfigWidget(MyGui.QWidget):
                             self.settings.useDummy,
                             self.updateHW)
 
+        # --- Lightsensor ----
+        self.chooseLight=createCheckbox("Lightsensor", # don't change name, it is processed elsewhere
+                            self.settings.useLightsensor,
+                            self.updateHW)
         # -------------------------------------------------
         # compose the layout
 
@@ -48,6 +52,8 @@ class hardwareConfigWidget(MyGui.QWidget):
         c+=1
         # HWT add your widgets to the grid
         grid.addWidget(self.chooseDummy,       c,1)
+        c+=1
+        grid.addWidget(self.chooseLight,       c,1)
 
 
         # -------------------------------------------------
@@ -74,39 +80,25 @@ class hardwareConfigWidget(MyGui.QWidget):
         self.settings.saveSetting("HWSleepTime", time)
 
 
-        # HWT handle user choice here
+        # HWT handle user choice here, also handle the impact on possible choices in the display tab
+        self.simpleChoice(self.settings.useDummy, "Dummy", self.chooseDummy, "useDummy")         
+        self.simpleChoice(self.settings.useLightsensor, "Lightsensor", self.chooseLight, "useLightsensor")        
+        
+    def simpleChoice(self,mode, modeName, selectMode, varName):
+        mode=getCheckboxEnabled(selectMode)
+        self.settings.saveSetting(varName, mode)
+        self.switchOption(modeName, mode, self.settings.time_ch_mode1, "time_ch_mode1")
+        self.switchOption(modeName, mode,self.settings.time_ch_mode2, "time_ch_mode2")
+        self.switchOption(modeName, mode,self.settings.str_ch_mode1, "str_ch_mode1")
+        self.switchOption(modeName, mode,self.settings.str_ch_mode2, "str_ch_mode2")
+        self.switchOption(modeName, mode,self.settings.str_ch_mode3, "str_ch_mode3")
+        self.switchOption(modeName, mode,self.settings.str_ch_mode4, "str_ch_mode4")
+        self.switchOption(modeName, mode,self.settings.str_ch_mode5, "str_ch_mode5")
+        
 
-        useDummy=getCheckboxEnabled(self.chooseDummy)
-        if ":" in self.settings.time_ch_mode1:
-                ch,mode=self.settings.time_ch_mode1.split(":")
-                if mode=="Dummy" and not useDummy:
-                    self.settings.saveSetting("time_ch_mode1", "None")
-        if ":" in self.settings.time_ch_mode2:
-                ch,mode=self.settings.time_ch_mode2.split(":")
-                if mode=="Dummy" and not useDummy:
-                    self.settings.saveSetting("time_ch_mode2", "None")
-        if ":" in self.settings.str_ch_mode1:
-                ch,mode=self.settings.str_ch_mode1.split(":")
-                if mode=="Dummy" and not useDummy:
-                    self.settings.saveSetting("str_ch_mode1", "None")
-        if ":" in self.settings.str_ch_mode2:
-                ch,mode=self.settings.str_ch_mode2.split(":")
-                if mode=="Dummy" and not useDummy:
-                    self.settings.saveSetting("str_ch_mode2", "None")
-        if ":" in self.settings.str_ch_mode3:
-                ch,mode=self.settings.str_ch_mode3.split(":")
-                if mode=="Dummy" and not useDummy:
-                    self.settings.saveSetting("str_ch_mode3", "None")
-        if ":" in self.settings.str_ch_mode4:
-                ch,mode=self.settings.str_ch_mode4.split(":")
-                if mode=="Dummy" and not useDummy:
-                    self.settings.saveSetting("str_ch_mode4", "None")
-        if ":" in self.settings.str_ch_mode5:
-                ch,mode=self.settings.str_ch_mode5.split(":")
-                if mode=="Dummy" and not useDummy:
-                    self.settings.saveSetting("str_ch_mode5", "None")
-        # todo the handling of all these settings could be made easier somehow
-        self.settings.saveSetting("useDummy", useDummy)
-
-
+    def switchOption(self,modeName, mode, selection, varName):
+            if ":" in selection:
+                ch,mode=selection.split(":")
+                if mode==modeName and not mode:
+                    self.settings.saveSetting(varName, "None")
 

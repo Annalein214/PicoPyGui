@@ -83,7 +83,7 @@ class Sensor:
     def test(self, port):
         # tests a port and initializes it => stop once port found, otherwise wrong device will get initialized
         try:
-            self.log.info(TAG+"Test Port %s for photodiode"% port)
+            self.log.info(TAG+"Test Port %s for dummy"% port)
             self.port=port
             self.initialise()
             if self.device==None:

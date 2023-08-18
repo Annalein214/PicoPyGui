@@ -211,6 +211,10 @@ class plotWidget(FigureCanvas):
                 value = self.hw.dummyVals[-1]
                 title = "Ext. Dummy"
                 yUnit = "V"
+            elif "Lightsensor" in mode:
+                value = self.hw.dummyVals[-1]
+                title = "Lightsensor"
+                yUnit = "V"
 
             text="%s: %.2e %s" % (title,value,yUnit)
 
@@ -266,7 +270,12 @@ class plotWidget(FigureCanvas):
                 values = self.hw.dummyVals
                 title = "External Dummy"
                 yUnit = "V"
-                yLabel="Dummies"
+                yLabel="Value"
+            elif "Lightsensor" in mode:
+                values = self.hw.dummyVals
+                title = "Lightsensor"
+                yUnit = "V"
+                yLabel="Value"
 
             
             if "HW" == channel:
@@ -275,6 +284,15 @@ class plotWidget(FigureCanvas):
             else:
                 time=(np.array(self.daq.time) - self.daq.startthread) / 60 # from unix time to minutes since measurement started
 
+            # strange mismatch of len(time) and len(values) only happens few times
+            # handle it like this for now, but need to investigate - TODO
+            if len(time)!=len(values) and abs(len(time)-len(values))<2:
+                time=list(time)
+                values=list(values)
+                if len(time)>len(values):
+                    time=time[:-1]
+                else:
+                    values=values[:-1]
             ax.plot(time, values, "-o", 
                     linewidth=1, markersize=1, 
                     alpha=0.7, color="C%d"%nbr)

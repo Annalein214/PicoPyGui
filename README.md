@@ -38,7 +38,17 @@ Then start in the Terminal with
 # How to add external hardware 
 
 In order to measure with external sensors, apart from the picoscope, within the same program and display the results on the same time axis, you need to provide a script which outputs the values once executed. 
-Search in the code for the string ”HWT" to find all locations where you need to add special code in order to add your external sensors.
+Search in the code for the string "HWT" to find all locations where you need to add special code in order to add your external sensors.
+List of what to do:
+* script reading out the sensor in code/sensors
+* in settings.cfg add a variable with name useSENSORNAME and add a bool 
+* add user choice for this variable in code/config/hw.py 
+* add choice in code/config/display.py for time and str wise display (need to change much more code if you want to see waveform or histogram)
+* import your hardware script in code/sensors/main.py and add the code as marked with "HWT"
+* in code/graph add the connection to code/sensors/main.py with linking the data array. Also give name and units. 
+* in code/hplot.py add the units at the "HWT" labeled points
+
+There are at least 2 examples in the current code: a dummy giving random numbers out and a photodiode which is read out by an arduino nano. The arduino is read out with serial connection.  
 
 # How to measure deadtime
 * TODO

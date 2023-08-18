@@ -58,14 +58,16 @@ class hourlyPlot:
             # get all npy files
             nbr=0 # count time plots
             files = sorted(glob(self.directory+"/*_"+str(runde)+".npy"))
+            #print(files)
             for fyle in files:
                 if "Triggerrate" in fyle or \
                    "avg" in fyle or \
                    "std" in fyle:
                    self.plotTime(time, fyle, runde, unixtime)
                    nbr+=1
-                if "HW_" in fyle[:3]:
+                if "HW_" in fyle.split("/")[-1][:3]:
                    self.plotTime(timeHW, fyle, runde, unixtime)
+                   nbr+=1
                 if "waveform" in fyle:
                     self.plotWaveform(fyle, runde, unixtime, interval)
                 if "Triggerrate" in fyle or \
@@ -75,26 +77,16 @@ class hourlyPlot:
                    "avg" in fyle or \
                    "std" in fyle:
                    self.plotHistogram(fyle, runde, unixtime)
-            self.allTimePlot(files, nbr, time, runde, unixtime)
+            self.allTimePlot(files, nbr, time, timeHW, runde, unixtime)
         except Exception as e: 
             traceback.print_exc()
             self.log.error("PlotAll failed with error %s" %str(e))
 
     # --------------------------------------------------------------------------------
 
-    def allTimePlot(self,files,total, time, runde, unixtime):
+    def allTimePlot(self,files,total, time, timeHW, runde, unixtime):
 
         self.log.debug("allTimePlot %d"% total)
-
-        #fig = plt.figure("Name", dpi=500)
-        #axes = [plt.subplot2grid((total,1), (0, 0))]
-        #axes[0].grid(True)
-        #plt.setp(axes[0].get_xticklabels(), visible=False)
-        #for i in range(total-1):
-        #    axes.append(plt.subplot2grid((total,1), (i+1,0), sharex=axes[0]))
-        #    axes[i+1].grid(True)
-            #
-
 
         fig = plt.figure(dpi=100, figsize=(7, 1.5*total), facecolor='white')
         gs=gridspec.GridSpec(total, 3) # y, x devisions
@@ -106,12 +98,13 @@ class hourlyPlot:
                 plt.setp(axes[i+1].get_xticklabels(), visible=False)
 
 
-
         i=0
         for fylename in files:
+            time2=time
             if "Triggerrate" in fylename or \
                "avg" in fylename or \
-               "std" in fylename:
+               "std" in fylename or \
+               "HW_" in fylename.split("/")[-1][:3]:
 
                 data=np.load(fylename)
                 c=fylename.split("/")[-1].split(".")[0].split("_")
@@ -130,7 +123,11 @@ class hourlyPlot:
                         yUnit="kHz"
                         data/=1000
                 elif "HW" in channel:
+                    # HWT add your unit here
                     yUnit="?"
+                    if "Lightsensor" in mode:
+                        yUnit="V"
+                    time2=timeHW
                     # HWT adjust unit
                 else: 
                     yUnit="V"
@@ -140,7 +137,7 @@ class hourlyPlot:
                         yUnit="mV"
                         data*=1000
 
-                axes[i].plot(time,data, "-o", linewidth=1, markersize=1.5, alpha=0.7, )
+                axes[i].plot(time2,data, "-o", linewidth=1, markersize=1.5, alpha=0.7, )
 
                 axes[i].grid(True)
                 axes[i].set_ylabel("%s %s / %s" % (channel, mode, yUnit), fontsize=8)
@@ -325,6 +322,9 @@ class hourlyPlot:
                 data/=1000
         elif "HW" in channel:
             yUnit="?"
+            # HWT add your unit here
+            if "Lightsensor" in mode:
+                yUnit="V"
             # HWT adjust unit
         else: 
             yUnit="V"

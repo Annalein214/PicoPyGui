@@ -6,6 +6,7 @@ import time, os
 
 # import hardware scripts
 from code.sensors.dummy import Sensor
+from code.sensors.lightsensor.photodiode import Photodiode
 
 class external(QThread):
 
@@ -60,7 +61,9 @@ class external(QThread):
             if self.dummy!=None: # cannot use "useDummy" here because that might be changed during run by the user in display tab
                 val=self.dummy.readDevice()
                 self.dummyVals.append(val)
-
+            if self.lightsensor!=None: # cannot use "useDummy" here because that might be changed during run by the user in display tab
+                val=self.lightsensor.readDevice()
+                self.lightVals.append(val)
             # ---
             self.endtime=time.time()
             self.analysis()
@@ -81,6 +84,7 @@ class external(QThread):
         HWT
         '''
         self.dummyVals = []
+        self.lightVals = []
         self.time=[]
 
     def analysis(self):
@@ -106,7 +110,8 @@ class external(QThread):
 
         if self.dummy!=None:
             self.save("HW_Dummy", self.dummyVals)
-
+        if self.lightsensor!=None:
+            self.save("HW_Lightsensor", self.lightVals)
         # Update settings
         self.rounds+=1
         self.lastSaved = self.endtime
@@ -147,6 +152,16 @@ class external(QThread):
                 self.settings.useDummy=False
                 self.dummy=None
 
+        if self.settings.useLightsensor: 
+            try:
+                self.lightsensor = Photodiode(self.log)
+                if self.lightsensor.online==False:
+                    self.settings.useLightsensor=False
+                    self.lightsensor=None
+            except:
+                self.log.error("Cannot load hardware Photodiode. Switch off.")
+                self.settings.useLightsensor=False
+                self.lightsensor=None
         
 
     def setDefault(self):
@@ -156,7 +171,9 @@ class external(QThread):
         self._threadIsStopped=True # use this to stop the thread (effect is not directly!)
         # --- run -----
         self.startthread=0 # time when thread started
+        # HWT initialize variable
         self.dummy=None
+        self.lightsensor=None
         
     def close(self):
         self.dummy.close()
@@ -164,7 +181,10 @@ class external(QThread):
 
         if not self.opts.test:
             # HWT close your stuff here
-            pass
+            if self.lightsensor!=None:
+                self.lightsensor.close()
+                self.lightsensor=None
+
         self.log.info("Hardware closed. Good night!")
 
 
