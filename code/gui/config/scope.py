@@ -51,13 +51,12 @@ class scopeConfigWidget(MyGui.QWidget):
         # --- Delay ---
         labelDelay = createLabel("Tr. Delay [Sampling Interval]")
         self.chooseDelay = createTextInput(self.settings.triggerdelay, self.updateDelay)
+
+        # --- Pretriggersamples ---
+        labelPretrig = createLabel("Pre-trigger Samples [%]")
+        self.choosePreTrig = createTextInput(self.settings.nopretriggersamples, self.updatePretrig)
         
-        labelHintDelay = createLabel("Note: + will shift trigger to left. \n"+\
-                                     "Default at 0 is a 10% shift to \nright. "+\
-                                     "Make sure you don't \nchoose a value "+\
-                                     "larger than \n10% otherwise the "+\
-                                     "waveform \nis shifted out of the \n"+\
-                                     "analysis window.")
+        
         # --- Timeout ---
         labelTimeout = createLabel("Timeout [ms]")
         self.chooseTimeout=createTextInput(self.settings.triggertimeout,self.updateTimeout)
@@ -121,7 +120,8 @@ class scopeConfigWidget(MyGui.QWidget):
         grid.addWidget(labelDelay,            c,0) 
         grid.addWidget(self.chooseDelay,      c,1) 
         c+=1
-        grid.addWidget(labelHintDelay,            c,1)
+        grid.addWidget(labelPretrig,            c,0) 
+        grid.addWidget(self.choosePreTrig,      c,1) 
         c+=1
         grid.addWidget(labelFreq,           c,0) 
         grid.addWidget(self.chooseFreq,     c,1) 
@@ -263,10 +263,12 @@ class scopeConfigWidget(MyGui.QWidget):
             self.log.error("Could not convert string to int %s"%triggervoltage)
             triggervoltage=0
             setText(self.chooseVoltage,"0")
-        if abs(triggervoltage)/1000>self.settings.voltagerange[self.settings.triggerchannel]:
-            self.log.error("Triggervoltage (%d V) outside voltagerange (%s V) for channel %s" % (
+        if triggervoltage/1000 > float(self.settings.voltagerange[self.settings.triggerchannel]) - self.settings.offset[self.settings.triggerchannel]/1000 or \
+           triggervoltage/1000 < -float(self.settings.voltagerange[self.settings.triggerchannel]) - self.settings.offset[self.settings.triggerchannel]/1000:
+            self.log.error("Triggervoltage (%f V) outside voltagerange (%f - %f V) for channel %s" % (
                                 triggervoltage/1000, 
-                                self.settings.voltagerange[self.settings.triggerchannel], 
+                                -self.settings.voltagerange[self.settings.triggerchannel]- self.settings.offset[self.settings.triggerchannel]/1000,
+                                self.settings.voltagerange[self.settings.triggerchannel]- self.settings.offset[self.settings.triggerchannel]/1000,
                                 self.settings.triggerchannel))
         #self.settings.triggervoltage=triggervoltage
         self.settings.saveSetting("triggervoltage", triggervoltage)
@@ -280,9 +282,31 @@ class scopeConfigWidget(MyGui.QWidget):
         except ValueError as e:
             self.log.error("Could not convert string to int %s"%delay)
             triggerdelay=0
-            setText(self.chooseVoltage,"0")
+            setText(self.choosePreTrig,"0")
         #self.settings.triggerdelay=triggerdelay
         self.settings.saveSetting("triggerdelay", triggerdelay)
+
+
+    def updatePretrig(self):
+        pretrig = str(getTextInput(self.choosePreTrig))
+        if pretrig=="-" or pretrig=="":# no wired effect when starting to type a negative number
+            pretrig=0.1
+        try:
+            pretrigger=float(pretrig)
+        except ValueError as e:
+            self.log.error("Could not convert string to int %s"%delay)
+            pretrigger=0.1
+            setText(self.choosePreTrig,"0.1")
+        if pretrigger<0 or pretrigger > 1: 
+            self.log.error("Pre Trigger sample fraction needs to be between 0 and 1. I recommend 0.1")
+            setText(self.choosePreTrig,"0.1")
+        self.settings.saveSetting("nopretriggersamples", pretrigger)
+
+
+    # --- Pretriggersamples ---
+        labelPretrig = createLabel("Pre-trigger Samples\n[Sampling Interval]")
+        self.choosePreTrig = createTextInput(self.settings.nopretriggersamples, self.updatePretrig)
+        
 
 
     def updateChEn(self):

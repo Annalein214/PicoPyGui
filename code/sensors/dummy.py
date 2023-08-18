@@ -69,7 +69,7 @@ class Sensor:
                     #print "Port found", port
                     
         if self.port==None:
-            self.log.error(TAG+"No port found. Measurement switched off!")
+            self.log.info(TAG+"No port found. Measurement switched off! For the dummy this is ok.")
             self.online=False
         else:
             self.log.info(TAG+"Using device at port %s for photodiode" % self.port)

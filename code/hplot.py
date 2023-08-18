@@ -4,8 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math, os, traceback
 from glob import glob
-plt.rc('xtick', labelsize=5)
-plt.rc('ytick', labelsize=5)
+#plt.rc('xtick', labelsize=5)
+#plt.rc('ytick', labelsize=5)
+import matplotlib.gridspec as gridspec
+
 
 from code.helpers import timestring_humanReadable, dateTime_plusHours, dateTime
 
@@ -84,15 +86,25 @@ class hourlyPlot:
 
         self.log.debug("allTimePlot %d"% total)
 
-        fig = plt.figure("Name", figsize=(3,10), dpi=300)
-        axes = [plt.subplot2grid((total,1), (0, 0))]
-        axes[0].grid(True)
+        #fig = plt.figure("Name", dpi=500)
+        #axes = [plt.subplot2grid((total,1), (0, 0))]
+        #axes[0].grid(True)
+        #plt.setp(axes[0].get_xticklabels(), visible=False)
+        #for i in range(total-1):
+        #    axes.append(plt.subplot2grid((total,1), (i+1,0), sharex=axes[0]))
+        #    axes[i+1].grid(True)
+            #
+
+
+        fig = plt.figure(dpi=100, figsize=(7, 1.5*total), facecolor='white')
+        gs=gridspec.GridSpec(total, 3) # y, x devisions
+        axes = [fig.add_subplot(gs[0,:]) ]
         plt.setp(axes[0].get_xticklabels(), visible=False)
         for i in range(total-1):
-            axes.append(plt.subplot2grid((total,1), (i+1,0), sharex=axes[0]))
-            axes[i+1].grid(True)
+            axes.append(fig.add_subplot(gs[i+1,:], sharex=axes[0]))
             if i<total-2:
                 plt.setp(axes[i+1].get_xticklabels(), visible=False)
+
 
 
         i=0
@@ -131,15 +143,15 @@ class hourlyPlot:
                 axes[i].plot(time,data, "-o", linewidth=1, markersize=1.5, alpha=0.7, )
 
                 axes[i].grid(True)
-                axes[i].set_ylabel("%s %s / %s" % (channel, mode, yUnit), fontsize=5)
+                axes[i].set_ylabel("%s %s / %s" % (channel, mode, yUnit), fontsize=8)
                 i+=1
         
-        axes[-1].set_xlabel("Time / min",fontsize=8)
+        axes[-1].set_xlabel("Time / min",fontsize=10)
 
         text="Measurement started at %s"%dateTime(unixtime)
         if runde>0:
             text+="\nThis round started at %s" % dateTime_plusHours(unixtime, runde)
-        axes[0].set_title(text,fontsize=6)
+        axes[0].set_title(text,fontsize=10)
 
         fig.subplots_adjust(wspace=0.1, 
                             hspace=0.03, # space vertically

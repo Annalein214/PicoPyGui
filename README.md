@@ -59,7 +59,6 @@ Search in the code for the string ”HWT" to find all locations where you need t
 
 # TODO
 * check 3000 properties
-* trigger delay -> understand it
 * combine picoscope types to one class with sub-classes implementing the changes
 * plots live verändern möglich machen
 * fft currently disabled

@@ -63,7 +63,8 @@ class daq(QThread):
         # enable channels
         for i in range(self.scope.NUM_CHANNELS):
             channel=list(self.scope.CHANNELS)[i][0]
-            self.setChannel(channel, self.settings.channelEnabled[channel])
+            ok=self.setChannel(channel, self.settings.channelEnabled[channel])
+            if not ok: return False
 
         # setup trigger
         ok=self.setTrigger()
@@ -103,7 +104,7 @@ class daq(QThread):
             # do not change anything in here 
             if not self.opts.test: # scope is connected
                 startBlock=time.time_ns() # the last command before block starts!
-                it=self.scope.runBlock(pretrig=self.nopretriggersamples)
+                it=self.scope.runBlock(pretrig=self.settings.nopretriggersamples)
                 #print ("run")
                 self.indisposedTimes.append(it)
                 while(self.scope.isReady() == False):
@@ -139,7 +140,7 @@ class daq(QThread):
                         A=np.random.randint(-vRange,vRange)
                         x=np.arange(0,self.settings.nosamples,1)/self.settings.nosamples*np.pi*np.random.randint(0,5)
                         x=x-np.pi/10*np.random.randint(0,10)
-                        wfm=A*np.sin(x)+self.settings.offset[channel]
+                        wfm=A*np.sin(x)-self.settings.offset[channel]
                         waveforms.append(wfm/1000)
                     data.append(waveforms)
 
@@ -391,23 +392,31 @@ class daq(QThread):
         wrapper function to manage the channel properties of the picoscope
         '''
 
-        VRange=self.scope.setChannel(channel=channel,
-                                      coupling=self.settings.coupling[channel],
-                                      VRange=self.settings.voltagerange[channel],
-                                      VOffset=self.settings.offset[channel]/1000, # offset is saved in mV, so convert to V here
-                                      enabled=enable,
-                                      )
-        if VRange!=self.settings.voltagerange[channel]:
-            self.out.warning("Voltagerange of Channel %s was changed from %s to %s"% (channel, 
+        try:
+            VRange=self.scope.setChannel(channel=channel,
+                                          coupling=self.settings.coupling[channel],
+                                          VRange=self.settings.voltagerange[channel],
+                                          VOffset=self.settings.offset[channel]/1000, # offset is saved in mV, so convert to V here
+                                          enabled=enable,
+                                          )
+
+            if VRange!=self.settings.voltagerange[channel]:
+                self.out.warning("Voltagerange of Channel %s was changed from %s to %s"% (channel, 
                                                                                           self.settings.voltagerange[channel], 
                                                                                           VRange))
-            self.settings.voltagerange[channel]=VRange
-        self.out.info("Channel %s: Mode %s, Voltage %fV, Offset %fmV, Enabled %d" % (channel,
+                self.settings.voltagerange[channel]=VRange
+            self.out.info("Channel %s: Mode %s, Voltage %fV, Offset %fmV, Enabled %d" % (channel,
                                                                         self.settings.coupling[channel],
                                                                         self.settings.voltagerange[channel]/1000,
                                                                         self.settings.offset[channel],
                                                                         int(self.settings.channelEnabled[channel]),
                                                                         ))
+            return True
+        except Exception as e:
+            self.log.error("ERROR settings channel %s: %s"%(channel,str(e)))
+            return False
+
+        
 
     def setTrigger(self):
     
@@ -420,25 +429,29 @@ class daq(QThread):
 
         
         # ensure channel is enabled
-        self.setChannel(self.settings.triggerchannel, enable=True)
+        ok=self.setChannel(self.settings.triggerchannel, enable=True)
+        if not ok: return False
 
-        ret=self.scope.setSimpleTrigger(self.settings.triggerchannel,
+        try:
+            ret=self.scope.setSimpleTrigger(self.settings.triggerchannel,
                                     threshold_V=self.settings.triggervoltage/1000, # in gui in mV here in V
                                     direction=self.settings.triggermode,
                                     delay=self.settings.triggerdelay,
                                     timeout_ms=self.settings.triggertimeout,
                                     enabled=True)
 
-        if ret:
-            self.out.info("Trigger: Channel %s, " %  (self.settings.triggerchannel) +\
-                          "Voltage %fV, " % (self.settings.triggervoltage/1000) +\
-                          "Mode %s, "% (self.settings.triggermode) +\
-                          "Delay %f, "% (self.settings.triggerdelay) +\
-                          "Timeout %f, "% (self.settings.triggertimeout))
-            return True
-        else:
-            self.out.error("WARNING: Setting trigger failed!")
-            return False # stop the run
+            if ret:
+                self.out.info("Trigger: Channel %s, " %  (self.settings.triggerchannel) +\
+                              "Voltage %fV, " % (self.settings.triggervoltage/1000) +\
+                              "Mode %s, "% (self.settings.triggermode) +\
+                              "Delay %f, "% (self.settings.triggerdelay) +\
+                              "Timeout %f, "% (self.settings.triggertimeout))
+                return True
+            else:
+                self.out.error("WARNING: Setting trigger failed!")
+                return False # stop the run
+        except Exception as e:
+            self.log.error("ERROR setting trigger: %s" %(str(e)))
 
     def setSampling(self):
         if self.opts.test: 
@@ -502,7 +515,7 @@ class daq(QThread):
         # search picoscope devices and let the user decide which one to use
         # might return a dummy device: bool(self.scope.dummy)
         ds=deviceShelf(log,self.opts.test)
-        self.scope=ds.select_and_start_device()
+        self.scope=ds.select_and_start_device(opts.test)
         self.opts.test=ds.test
 
         self.hw=None # will be set by GUI when first run starts

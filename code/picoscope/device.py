@@ -59,7 +59,7 @@ class deviceShelf():
 		elif len(devices)==1:
 			self.log.msg("Only one device found. Automatically choose this device:")
 			chosen_device=devices[0]
-			vinfo=getDeviceName(chosen_device)
+			vinfo=self.getDeviceName(chosen_device)
 		else:
 			self.log.msg(green+"Please select a device: The following devices are available (type, batch, serial)."+nc)
 			i=1
@@ -87,11 +87,11 @@ class deviceShelf():
 		self.log.info("The chosen device is called (type, batch, serial): %s"%vinfo)
 		return chosen_device
 
-	def select_and_start_device(self):
+	def select_and_start_device(self, test):
 		devices=self.find_units()
 		if devices:
 			device=self.select_unit(devices)
-		if not devices or opts.test:
+		if not devices or test:
 			self.log.warning("No picoscope found, start in test mode")
 			self.test=True
 			device = dummyScope()

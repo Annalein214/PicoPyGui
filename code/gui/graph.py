@@ -160,7 +160,8 @@ class plotWidget(FigureCanvas):
                 # draw everything
                 self.draw()
             else:
-                self.log.debug("Min time did not elapse")
+                pass
+                #self.log.debug("Min time did not elapse")
         except Exception as e:
             traceback.print_exc()
             self.log.error("Graph exception: %s"%(str(e)))
@@ -363,7 +364,7 @@ class plotWidget(FigureCanvas):
 
                 if mode in ["Max.Amplitude", "Min.Amplitude"]:
                     # prepare histogram
-                    xBorders=(-vRange+offSet,vRange+offSet) # correct ylim for offset
+                    xBorders=(-vRange-offSet,vRange-offSet) # correct ylim for offset
                 else:
                     mi=np.min(values)
                     ma=np.max(values)
@@ -492,8 +493,8 @@ class plotWidget(FigureCanvas):
 
             # keep lims constant
             if "waveform" in mode:
-                yBorders=(-vRange+offSet,vRange+offSet) # correct ylim for offset
-                #self.axW.set_ylim(tuple(yBorders))
+                yBorders=(-vRange-offSet,vRange-offSet) # correct ylim for offset
+                self.axW.set_ylim(tuple(yBorders))
                 self.axW.set_xlim(0, wfmTime[-1])
             else:
                 try: self.axW.set_xscale("log")
