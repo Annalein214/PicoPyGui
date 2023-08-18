@@ -31,6 +31,9 @@ class hourlyPlot:
             
             # get round from file name of a file which always exists
             tfyles=sorted(glob(self.directory+"/Time_*.npy"))
+            if len(tfyles)==0:
+                self.log.error("No files found for plotting")
+                return False
             runde = int(tfyles[-1].split("/")[-1].split(".")[0].split("_")[-1])
             #print("hourlyPlot, runde", runde)
 
@@ -123,12 +126,15 @@ class hourlyPlot:
                         yUnit="kHz"
                         data/=1000
                 elif "HW" in channel:
-                    # HWT add your unit here
+                    time2=timeHW
                     yUnit="?"
+                    # HWT add your unit here
                     if "Lightsensor" in mode:
                         yUnit="V"
-                    time2=timeHW
-                    # HWT adjust unit
+                    elif "HV" in mode:
+                        yUnit="V"
+                        data=data[:,1]
+                    
                 else: 
                     yUnit="V"
                     ma=np.max(data)
@@ -322,10 +328,12 @@ class hourlyPlot:
                 data/=1000
         elif "HW" in channel:
             yUnit="?"
-            # HWT add your unit here
+            # HWT add your unit here and maybe the data
             if "Lightsensor" in mode:
                 yUnit="V"
-            # HWT adjust unit
+            elif "HV" in mode:
+                yUnit="V"
+                data=data[:,1]
         else: 
             yUnit="V"
             ma=np.max(data)

@@ -295,6 +295,8 @@ class displayConfigWidget(MyGui.QWidget):
             options.append("HW:Dummy")
         if self.settings.useLightsensor: 
             options.append("HW:Lightsensor")
+        if self.settings.useHV: 
+            options.append("HW:HV")
         return options
 
     def getStrOptions(self):
@@ -311,4 +313,6 @@ class displayConfigWidget(MyGui.QWidget):
             options.append("HW:Dummy")
         if self.settings.useLightsensor: 
             options.append("HW:Lightsensor")
+        if self.settings.useHV: 
+            options.append("HW:HV")
         return options

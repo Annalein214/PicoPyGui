@@ -39,6 +39,13 @@ class hardwareConfigWidget(MyGui.QWidget):
         self.chooseLight=createCheckbox("Lightsensor", # don't change name, it is processed elsewhere
                             self.settings.useLightsensor,
                             self.updateHW)
+
+        # --- HV ----
+        self.chooseHV=createCheckbox("HV", # don't change name, it is processed elsewhere
+                            self.settings.useHV,
+                            self.updateHW)
+
+        
         # -------------------------------------------------
         # compose the layout
 
@@ -54,7 +61,8 @@ class hardwareConfigWidget(MyGui.QWidget):
         grid.addWidget(self.chooseDummy,       c,1)
         c+=1
         grid.addWidget(self.chooseLight,       c,1)
-
+        c+=1
+        grid.addWidget(self.chooseHV,       c,1)
 
         # -------------------------------------------------
 
@@ -83,7 +91,9 @@ class hardwareConfigWidget(MyGui.QWidget):
         # HWT handle user choice here, also handle the impact on possible choices in the display tab
         self.simpleChoice(self.settings.useDummy, "Dummy", self.chooseDummy, "useDummy")         
         self.simpleChoice(self.settings.useLightsensor, "Lightsensor", self.chooseLight, "useLightsensor")        
-        
+        self.simpleChoice(self.settings.useHV, "HV", self.chooseHV, "useHV")        
+
+
     def simpleChoice(self,mode, modeName, selectMode, varName):
         mode=getCheckboxEnabled(selectMode)
         self.settings.saveSetting(varName, mode)

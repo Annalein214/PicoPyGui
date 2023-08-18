@@ -7,6 +7,7 @@ import time, os
 # import hardware scripts
 from code.sensors.dummy import Sensor
 from code.sensors.lightsensor.photodiode import Photodiode
+from code.sensors.hv.Caen import HV
 
 class external(QThread):
 
@@ -61,9 +62,12 @@ class external(QThread):
             if self.dummy!=None: # cannot use "useDummy" here because that might be changed during run by the user in display tab
                 val=self.dummy.readDevice()
                 self.dummyVals.append(val)
-            if self.lightsensor!=None: # cannot use "useDummy" here because that might be changed during run by the user in display tab
+            if self.lightsensor!=None: #
                 val=self.lightsensor.readDevice()
                 self.lightVals.append(val)
+            if self.hv!=None: 
+                val=self.hv.readDevice()
+                self.hvVals.append(val)
             # ---
             self.endtime=time.time()
             self.analysis()
@@ -85,6 +89,7 @@ class external(QThread):
         '''
         self.dummyVals = []
         self.lightVals = []
+        self.hvVals = []
         self.time=[]
 
     def analysis(self):
@@ -112,6 +117,8 @@ class external(QThread):
             self.save("HW_Dummy", self.dummyVals)
         if self.lightsensor!=None:
             self.save("HW_Lightsensor", self.lightVals)
+        if self.hv!=None:
+            self.save("HW_HV", self.hvVals)
         # Update settings
         self.rounds+=1
         self.lastSaved = self.endtime
@@ -162,6 +169,16 @@ class external(QThread):
                 self.log.error("Cannot load hardware Photodiode. Switch off.")
                 self.settings.useLightsensor=False
                 self.lightsensor=None
+        if self.settings.useHV: 
+            try:
+                self.hv = HV(self.log)
+                if self.hv.online==False:
+                    self.settings.useHV=False
+                    self.hv=None
+            except:
+                self.log.error("Cannot load hardware Photodiode. Switch off.")
+                self.settings.useHV=False
+                self.hv=None
         
 
     def setDefault(self):
@@ -174,6 +191,7 @@ class external(QThread):
         # HWT initialize variable
         self.dummy=None
         self.lightsensor=None
+        self.hv=None
         
     def close(self):
         self.dummy.close()
@@ -184,6 +202,9 @@ class external(QThread):
             if self.lightsensor!=None:
                 self.lightsensor.close()
                 self.lightsensor=None
+            if self.hv!=None:
+                self.hv.close()
+                self.hv=None
 
         self.log.info("Hardware closed. Good night!")
 

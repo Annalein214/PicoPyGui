@@ -215,6 +215,10 @@ class plotWidget(FigureCanvas):
                 value = self.hw.dummyVals[-1]
                 title = "Lightsensor"
                 yUnit = "V"
+            elif "HV" in mode:
+                value = self.hw.hvVals[-1][1]
+                title = "HV"
+                yUnit = "V"
 
             text="%s: %.2e %s" % (title,value,yUnit)
 
@@ -276,6 +280,15 @@ class plotWidget(FigureCanvas):
                 title = "Lightsensor"
                 yUnit = "V"
                 yLabel="Value"
+            elif "HV" in mode:
+                values= np.array(self.hw.hvVals)
+                #print(values)
+                # get the second column in a 2d numpy array named values
+                values = values[:,1]
+                #print(values)
+                title = "HV"
+                yUnit = "V"
+                yLabel="Voltage"
 
             
             if "HW" == channel:
@@ -293,6 +306,7 @@ class plotWidget(FigureCanvas):
                     time=time[:-1]
                 else:
                     values=values[:-1]
+            #print(values)
             ax.plot(time, values, "-o", 
                     linewidth=1, markersize=1, 
                     alpha=0.7, color="C%d"%nbr)

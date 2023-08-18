@@ -1,12 +1,12 @@
 '''
-Photodiode driven with an arduino
+HV driven and read out with an arduino
 '''
 
 import serial, sys, glob, traceback
 
-TAG = "PD"
+TAG = "HV"
 
-class Photodiode:
+class HV:
 
     def readDevice(self):
         # get the data
@@ -22,22 +22,26 @@ class Photodiode:
         string = string.replace("\\r", "").replace("\\n", "").replace("b'", "").replace("'", "")
         #self.log.debug(TAG+": Raw3: %s"% string)
 
-        if not "Diode" in str(string):
-            raise RuntimeError(TAG+": Value not from Diode: %s" % raw)
-        voltage=float(string.split(" ")[1])
+        if not "Vmon" in str(string):
+            raise RuntimeError(TAG+": Value not from HV: %s" % raw)
+        
+        values=string.split(" ")
+        monVoltage=float(values[1]) # mV
+        HVVoltage=float(values[4]) # mV
+        HVError=float(values[7]) # mV
 
         #self.log.debug(TAG+": Voltage [mV]: %f"% voltage)
         #self.device.close()
-        return voltage
+        return monVoltage, HVVoltage, HVError
 
     def initialise(self,):
         # start connection to device, used by test()
-        self.device=serial.Serial(str(self.port), 9600,timeout=2)
+        self.device=serial.Serial(str(self.port), 9600,timeout=3)
 
     def test(self, port):
         # tests a port and initializes it => stop once port found, otherwise wrong device will get initialized
         try:
-            self.log.info(TAG+": Test Port %s for photodiode"% port)
+            self.log.info(TAG+": Test Port %s for device"% port)
             self.port=port
             self.initialise()
             if self.device==None:
@@ -99,6 +103,7 @@ class Photodiode:
                 if "BLTH" in port: continue
 
                 test=self.test(port)
+                test=self.test(port)
                 if test==True:
                     self.port=port
                     break
@@ -108,7 +113,7 @@ class Photodiode:
             self.log.error(TAG+": No port found. Measurement switched off!")
             self.online=False
         else:
-            self.log.warning(TAG+": Using device at port %s for photodiode" % self.port)
+            self.log.warning(TAG+": Using device at port %s for HV" % self.port)
             self.initialise()
             self.online=True
 
@@ -131,7 +136,7 @@ if __name__ == "__main__":
             print("INFO: "+str)
 
     log=log()
-    t=Photodiode(log)
+    t=HV(log)
     print (t.readDevice())
 
 
