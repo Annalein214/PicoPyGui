@@ -13,31 +13,26 @@ class HV:
         #self.initialise() # seems to be no issue if this is done repeatedly
         if self.device==None:
             return False
-        if 1: # cannot try because I rely on this failing for wrong ports
-        #try:
-            # the trydevice gives a float value in millivoltage after the string "Diode "
-            raw = self.device.readline()
-            #self.log.debug(TAG+": Raw1: %s"% raw)
-            string = str(raw)
-            #self.log.debug(TAG+": Raw2: %s"% string)
-
-            string = string.replace("\\r", "").replace("\\n", "").replace("b'", "").replace("'", "")
-            #self.log.debug(TAG+": Raw3: %s"% string)
-
-            if not "Vmon" in str(string):
-                raise RuntimeError(TAG+": Value not from HV: %s" % raw)
+        # Note: cannot try because I rely on this failing for wrong ports
             
-            values=string.split(" ")
-            monVoltage=float(values[1]) # mV
-            HVVoltage=float(values[4]) # mV
-            HVError=float(values[7]) # mV
+        self.device.write(b'1')
+        raw = self.device.readline()
+        self.device.write(b'1')
+        raw = self.device.readline()
+        string = str(raw, 'utf-8').strip()
 
-            #self.log.debug(TAG+": Voltage [mV]: %f"% voltage)
-            #self.device.close()
-            return monVoltage, HVVoltage, HVError
-        #except Exception as e:
-        #    self.log.error("ERROR in HV readdevice: %s" %str(e))
-        #    return -1,-1,-1
+        if not "Vmon" in str(string):
+            raise RuntimeError(TAG+": Value not from HV: %s" % raw)
+        
+        values=string.split(" ")
+        monVoltage=float(values[1]) # mV
+        HVVoltage=float(values[4]) # mV
+        HVError=float(values[7]) # mV
+
+        #self.log.debug(TAG+": Voltage [mV]: %f"% voltage)
+        #self.device.close()
+        return monVoltage, HVVoltage, HVError
+       
 
     def initialise(self,):
         # start connection to device, used by test()

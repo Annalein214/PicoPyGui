@@ -47,7 +47,9 @@ class hourlyPlot:
                         interval=int(float(line.split(";")[-1].strip().split(" ")[1])) # ns
 
             # get the time as this is shared by many variables
-            time = np.load(self.directory+"/Time_"+str(runde)+".npy") 
+            time = np.load(self.directory+"/Time_"+str(runde)+".npy")
+            if len(time)==0:
+                raise RuntimeError("Empty Time") 
             time-=unixtime
             time/=60. # convert to minutes
 
@@ -110,6 +112,8 @@ class hourlyPlot:
                "HW_" in fylename.split("/")[-1][:3]:
 
                 data=np.load(fylename)
+                if len(data)==0:
+                    raise RuntimeError("Data empty in allTimePlot")
                 c=fylename.split("/")[-1].split(".")[0].split("_")
                 if len(c)>=3:
                     channel=c[0] # A, B, ..., HW
@@ -172,6 +176,7 @@ class hourlyPlot:
         self.log.debug("PlotHistogram %s %d %f"%(fylename, runde, unixtime))
 
         data=np.load(fylename)
+        if len(data)==0: raise RuntimeError("Data empty in plotHistogram")
         try:
            data= np.hstack(data)
         except Exception as e:

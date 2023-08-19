@@ -2,7 +2,7 @@
 Photodiode driven with an arduino
 '''
 
-import serial, sys, glob, traceback
+import serial, sys, glob, traceback, time
 
 TAG = "PD"
 
@@ -13,13 +13,21 @@ class Photodiode:
         #self.initialise() # seems to be no issue if this is done repeatedly
         if self.device==None:
             return False
-        # the device gives a float value in millivoltage after the string "Diode "
+
+        # you need to do this twice in order to get a result at the first time
+        self.device.write(b'1')
         raw = self.device.readline()
+        self.device.write(b'1')
+        raw = self.device.readline()
+
+        # the device gives a float value in millivoltage after the string "Diode "
+        
+        #raw=self.reader.readline()
         #self.log.debug(TAG+": Raw1: %s"% raw)
-        string = str(raw)
+        string = str(raw, 'utf-8').strip()
         #self.log.debug(TAG+": Raw2: %s"% string)
 
-        string = string.replace("\\r", "").replace("\\n", "").replace("b'", "").replace("'", "")
+        #string = string.replace("\\r", "").replace("\\n", "").replace("b'", "").replace("'", "")
         #self.log.debug(TAG+": Raw3: %s"% string)
 
         if not "Diode" in str(string):
@@ -32,7 +40,7 @@ class Photodiode:
 
     def initialise(self,):
         # start connection to device, used by test()
-        self.device=serial.Serial(str(self.port), 9600,timeout=2)
+        self.device=serial.Serial(str(self.port), 9600,timeout=2, write_timeout = 1)
 
     def test(self, port):
         # tests a port and initializes it => stop once port found, otherwise wrong device will get initialized
@@ -66,6 +74,8 @@ class Photodiode:
         self.port=port
         self.log=log
         self.log.info(TAG+": Port given: %s"%port)
+
+        
 
         self.findPort(port)
         

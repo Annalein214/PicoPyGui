@@ -24,54 +24,18 @@ void setup(){
   Serial.begin(9600);
   
   pinMode(EnablePIN, OUTPUT);
-  digitalWrite(EnablePIN, HIGH); // ensure being online
+  digitalWrite(EnablePIN, HIGH); // New: ensure being online, could also be used to switch on/off manually
 
   delay(500);
 }
 
-// -------------------------------------------------------------------------
-
-void loop(){
-
-  /*
-  if (1){ 
-    // check if new messages are incoming
-    // if msg 
-    //    OFF -> turn off HV / pin2
-    //    ON  -> turn on HV / pin2
-    if (Serial.available() > 0){
-      incomingMSG = Serial.readString();  //read until timeout
-      incomingMSG.trim(); 
-      if (incomingMSG == "ON") {
-        // turn on HV
-        digitalWrite(EnablePIN, HIGH);
-        Serial.println("Enable HV");
-        delay(500);
-      }
-      else if (incomingMSG == "OFF") {
-        Serial.println("Disabled HV");
-        // turn off HV
-        digitalWrite(EnablePIN, LOW);
-        delay(500);
-      }
-      else {
-        Serial.print("ERROR: Don't understand message: ");
-        Serial.println(incomingMSG);
-        delay(500);
-      }
-    }
-    
-
-  }
-*/
-
-  if (1){
+void sendValue(){
     // read Vmon
     VmonValue =analogRead(VmonPIN); //
     Vmon = VmonValue * (5000.0 / 1023.0); // 10 bit // -> mV
     hv =   Vmon * monCoeff / 1000.0 + monOffset ; // -> V
     accuracy = sqrt( sq(arduinoAcc * monCoeff) + sq(hvAcc*hv) ); // add in quadrature because uncertainties are not correlated, arduinoCoeff translated to HV before this
-    Serial.print("\tVmon ");
+    Serial.print("\tVmon "); // do not change this output! otherwise python receiver will break
     Serial.print(Vmon);
     Serial.print(" mV; HV "); 
     Serial.print(hv);
@@ -80,5 +44,18 @@ void loop(){
     Serial.print(" V");
     Serial.println("");
   }
-  delay(500);
+
+// -------------------------------------------------------------------------
+
+void loop(){
+
+  // check if new messages are incoming
+  if (Serial.available() > 0){
+      digitalWrite(LED_BUILTIN, HIGH);
+      int val = char(Serial.read()) - '0';
+      if (val == 1){
+        sendValue();
+      }
+      delay(200);
+  }  
 }

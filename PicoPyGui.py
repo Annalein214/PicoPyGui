@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 '''
 You have to execute this script with python 3 to start the application
 '''
