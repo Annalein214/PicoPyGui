@@ -119,7 +119,7 @@ class displayConfigWidget(MyGui.QWidget):
         only use one function, so that it is easier to use from other widgets
         '''
 
-        self.log.debug("Update Display")
+        #self.log.debug("Update Display")
 
         #self.settings.raw_data_ch=str(getValueSelect(self.chooseRaw))
         raw_data_ch=str(getValueSelect(self.chooseRaw))
@@ -188,12 +188,12 @@ class displayConfigWidget(MyGui.QWidget):
 
     def renewDisplayWidget(self, index):
 
-        self.log.debug("Renew Display? %d %s"%(index, self.parent.tabText(index)))
+        #self.log.debug("Renew Display? %d %s"%(index, self.parent.tabText(index)))
         # only update if this tab is opened
         if self.parent.tabText(index)!="Display":
             return
 
-        self.log.debug("Renew Display!")
+        #self.log.debug("Renew Display!")
 
         # prevent updateDisplay from firing due to changing the select options
         self.chooseRaw.blockSignals(True)

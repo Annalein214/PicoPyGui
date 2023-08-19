@@ -129,7 +129,8 @@ if __name__ == "__main__":
             print("DEBUG: "+str)
         def info(self,str):
             print("INFO: "+str)
-
+        def warning(self,str):
+            print("WARN: "+str)
     log=log()
     t=Photodiode(log)
     print (t.readDevice())
