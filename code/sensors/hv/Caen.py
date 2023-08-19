@@ -13,26 +13,31 @@ class HV:
         #self.initialise() # seems to be no issue if this is done repeatedly
         if self.device==None:
             return False
-        # the device gives a float value in millivoltage after the string "Diode "
-        raw = self.device.readline()
-        #self.log.debug(TAG+": Raw1: %s"% raw)
-        string = str(raw)
-        #self.log.debug(TAG+": Raw2: %s"% string)
+        if 1: # cannot try because I rely on this failing for wrong ports
+        #try:
+            # the trydevice gives a float value in millivoltage after the string "Diode "
+            raw = self.device.readline()
+            #self.log.debug(TAG+": Raw1: %s"% raw)
+            string = str(raw)
+            #self.log.debug(TAG+": Raw2: %s"% string)
 
-        string = string.replace("\\r", "").replace("\\n", "").replace("b'", "").replace("'", "")
-        #self.log.debug(TAG+": Raw3: %s"% string)
+            string = string.replace("\\r", "").replace("\\n", "").replace("b'", "").replace("'", "")
+            #self.log.debug(TAG+": Raw3: %s"% string)
 
-        if not "Vmon" in str(string):
-            raise RuntimeError(TAG+": Value not from HV: %s" % raw)
-        
-        values=string.split(" ")
-        monVoltage=float(values[1]) # mV
-        HVVoltage=float(values[4]) # mV
-        HVError=float(values[7]) # mV
+            if not "Vmon" in str(string):
+                raise RuntimeError(TAG+": Value not from HV: %s" % raw)
+            
+            values=string.split(" ")
+            monVoltage=float(values[1]) # mV
+            HVVoltage=float(values[4]) # mV
+            HVError=float(values[7]) # mV
 
-        #self.log.debug(TAG+": Voltage [mV]: %f"% voltage)
-        #self.device.close()
-        return monVoltage, HVVoltage, HVError
+            #self.log.debug(TAG+": Voltage [mV]: %f"% voltage)
+            #self.device.close()
+            return monVoltage, HVVoltage, HVError
+        #except Exception as e:
+        #    self.log.error("ERROR in HV readdevice: %s" %str(e))
+        #    return -1,-1,-1
 
     def initialise(self,):
         # start connection to device, used by test()
@@ -82,7 +87,7 @@ class HV:
 
         if self.port==None:
 
-            # find a port 
+            # find a port  
             self.log.info(TAG+": No port given. Try to find port for platform "+sys.platform)
             if sys.platform.startswith('win'):
                 ports = ['COM%s' % (i + 1) for i in range(256)]
@@ -103,7 +108,7 @@ class HV:
                 if "BLTH" in port: continue
 
                 test=self.test(port)
-                test=self.test(port)
+                #test=self.test(port)
                 if test==True:
                     self.port=port
                     break

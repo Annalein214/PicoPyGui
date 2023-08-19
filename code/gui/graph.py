@@ -123,6 +123,9 @@ class plotWidget(FigureCanvas):
 
     def update_figure(self): 
 
+        if not self.daq.isRunning():
+            self.log.error("Daq not running. Maybe slow PC?")
+            return
         try:
             # pack into try to avoid nasty crash just because of plotting
             now=time.time()
@@ -212,7 +215,7 @@ class plotWidget(FigureCanvas):
                 title = "Ext. Dummy"
                 yUnit = "V"
             elif "Lightsensor" in mode:
-                value = self.hw.dummyVals[-1]
+                value = self.hw.lightVals[-1]
                 title = "Lightsensor"
                 yUnit = "V"
             elif "HV" in mode:
@@ -276,7 +279,7 @@ class plotWidget(FigureCanvas):
                 yUnit = "V"
                 yLabel="Value"
             elif "Lightsensor" in mode:
-                values = self.hw.dummyVals
+                values = self.hw.lightVals
                 title = "Lightsensor"
                 yUnit = "V"
                 yLabel="Value"

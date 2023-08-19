@@ -58,16 +58,27 @@ class external(QThread):
         while not self._threadIsStopped:
             self.startBlock=time.time()
 
+            
             # -- HWT: get HW output here
+            # use try to keep the thread running in case of a readout error
             if self.dummy!=None: # cannot use "useDummy" here because that might be changed during run by the user in display tab
                 val=self.dummy.readDevice()
                 self.dummyVals.append(val)
             if self.lightsensor!=None: #
-                val=self.lightsensor.readDevice()
-                self.lightVals.append(val)
-            if self.hv!=None: 
-                val=self.hv.readDevice()
-                self.hvVals.append(val)
+                try:
+                    val=self.lightsensor.readDevice()
+                    #rint(self.lightVals)
+                    self.lightVals.append(val)
+                except Exception as e:
+                    self.log.error("ERROR in Lightsensor reading: %s"%(str(e)))
+                    self.lightVals.append(-1)
+            if self.hv!=None:
+                try:               
+                    val=self.hv.readDevice()
+                    self.hvVals.append(val)
+                except Exception as e:
+                    self.log.error("ERROR in HV reading: %s"%(str(e)))
+                    self.hvVals.append((-1,-1,-1))
             # ---
             self.endtime=time.time()
             self.analysis()
@@ -151,34 +162,35 @@ class external(QThread):
         self.setDefault()
 
         #--- HWT: initialise hardware here
-        if self.settings.useDummy: 
-            try:
-                self.dummy = Sensor(self.log)
-            except:
-                self.log.error("Cannot load hardware Dummy. Switch off.")
-                self.settings.useDummy=False
-                self.dummy=None
+        # always initialize here even if user switches off later
 
-        if self.settings.useLightsensor: 
-            try:
-                self.lightsensor = Photodiode(self.log)
-                if self.lightsensor.online==False:
-                    self.settings.useLightsensor=False
-                    self.lightsensor=None
-            except:
-                self.log.error("Cannot load hardware Photodiode. Switch off.")
+        try:
+            self.dummy = Sensor(self.log)
+        except:
+            self.log.error("Cannot load hardware Dummy. Switch off.")
+            self.settings.useDummy=False
+            self.dummy=None
+
+
+        try:
+            self.lightsensor = Photodiode(self.log)
+            if self.lightsensor.online==False:
                 self.settings.useLightsensor=False
                 self.lightsensor=None
-        if self.settings.useHV: 
-            try:
-                self.hv = HV(self.log)
-                if self.hv.online==False:
-                    self.settings.useHV=False
-                    self.hv=None
-            except:
-                self.log.error("Cannot load hardware Photodiode. Switch off.")
+        except:
+            self.log.error("Cannot load hardware Photodiode. Switch off.")
+            self.settings.useLightsensor=False
+            self.lightsensor=None
+
+        try:
+            self.hv = HV(self.log)
+            if self.hv.online==False:
                 self.settings.useHV=False
                 self.hv=None
+        except:
+            self.log.error("Cannot load hardware Photodiode. Switch off.")
+            self.settings.useHV=False
+            self.hv=None
         
 
     def setDefault(self):

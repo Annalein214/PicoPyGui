@@ -34,6 +34,7 @@ Then start in the Terminal with
 * you can choose to terminate measurement after a certain number of minutes. If you choose 0 min, the measurement will continue until you manually stop
 * all values of the tab "Display" can be changed live during a run, so all values can be checked live
 * user log entries can be entered anytime in the text input above the start/stop button
+* USB hardware has to be plugged in before booting the program. If you remove it, also reboot the program!
 
 # How to add external hardware 
 

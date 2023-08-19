@@ -118,6 +118,7 @@ class Photodiode:
 
 
 if __name__ == "__main__":
+    from time import sleep
 
     # make a dummy log class
     class log:
@@ -133,7 +134,9 @@ if __name__ == "__main__":
             print("WARN: "+str)
     log=log()
     t=Photodiode(log)
-    print (t.readDevice())
+    while True:
+        print (t.readDevice())
+        sleep(1)
 
 
 

@@ -89,21 +89,27 @@ class hardwareConfigWidget(MyGui.QWidget):
 
 
         # HWT handle user choice here, also handle the impact on possible choices in the display tab
-        self.simpleChoice(self.settings.useDummy, "Dummy", self.chooseDummy, "useDummy")         
-        self.simpleChoice(self.settings.useLightsensor, "Lightsensor", self.chooseLight, "useLightsensor")        
-        self.simpleChoice(self.settings.useHV, "HV", self.chooseHV, "useHV")        
+        self.simpleChoice(self.settings.useDummy, "Dummy", self.chooseDummy, "useDummy", self.hw.dummy)         
+        self.simpleChoice(self.settings.useLightsensor, "Lightsensor", self.chooseLight, "useLightsensor",self.hw.lightsensor)        
+        self.simpleChoice(self.settings.useHV, "HV", self.chooseHV, "useHV",self.hw.hv)        
 
 
-    def simpleChoice(self,mode, modeName, selectMode, varName):
+    def simpleChoice(self,mode, modeName, selectMode, varName, objict):
         mode=getCheckboxEnabled(selectMode)
-        self.settings.saveSetting(varName, mode)
-        self.switchOption(modeName, mode, self.settings.time_ch_mode1, "time_ch_mode1")
-        self.switchOption(modeName, mode,self.settings.time_ch_mode2, "time_ch_mode2")
-        self.switchOption(modeName, mode,self.settings.str_ch_mode1, "str_ch_mode1")
-        self.switchOption(modeName, mode,self.settings.str_ch_mode2, "str_ch_mode2")
-        self.switchOption(modeName, mode,self.settings.str_ch_mode3, "str_ch_mode3")
-        self.switchOption(modeName, mode,self.settings.str_ch_mode4, "str_ch_mode4")
-        self.switchOption(modeName, mode,self.settings.str_ch_mode5, "str_ch_mode5")
+        if mode and objict!=None and objict.online:
+            self.settings.saveSetting(varName, True)
+        else:
+            self.settings.saveSetting(varName, False)
+            setCheckbox(selectMode, False)
+
+        if not mode:
+            self.switchOption(modeName, mode, self.settings.time_ch_mode1, "time_ch_mode1")
+            self.switchOption(modeName, mode,self.settings.time_ch_mode2, "time_ch_mode2")
+            self.switchOption(modeName, mode,self.settings.str_ch_mode1, "str_ch_mode1")
+            self.switchOption(modeName, mode,self.settings.str_ch_mode2, "str_ch_mode2")
+            self.switchOption(modeName, mode,self.settings.str_ch_mode3, "str_ch_mode3")
+            self.switchOption(modeName, mode,self.settings.str_ch_mode4, "str_ch_mode4")
+            self.switchOption(modeName, mode,self.settings.str_ch_mode5, "str_ch_mode5")
         
 
     def switchOption(self,modeName, mode, selection, varName):

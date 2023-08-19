@@ -172,7 +172,11 @@ class hourlyPlot:
         self.log.debug("PlotHistogram %s %d %f"%(fylename, runde, unixtime))
 
         data=np.load(fylename)
-        data= np.hstack(data)
+        try:
+           data= np.hstack(data)
+        except Exception as e:
+           print("data",data)
+           self.log.error("Error: %s"%str(e))
         c=fylename.split("/")[-1].split(".")[0].split("_")
         if len(c)>=3:
             channel=c[0] # A, B, ..., HW
@@ -345,7 +349,16 @@ class hourlyPlot:
 
         fig = plt.figure("Name", figsize=(7,3), dpi=100)         
         ax1 = plt.subplot2grid((1,1), (0, 0))
-
+        
+        # strange mismatch of len(time) and len(values) only happens few times
+        # handle it like this for now, but need to investigate - TODO
+        if len(time)!=len(data) and abs(len(time)-len(data))<2:
+            time=list(time)
+            data=list(data)
+            if len(time)>len(data):
+                time=time[:-1]
+            else:
+                data=data[:-1]
         ax1.plot(time,data, "-o", linewidth=1, markersize=1.5, alpha=0.7, )
 
         ax1.grid(True)

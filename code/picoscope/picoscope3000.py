@@ -56,7 +56,8 @@ class picoscope:
     PORTS = {"0": 0x80, "1":0x81}
     PORTRANGE=5000 # -5V to 5V
     CHANNEL_COUPLINGS = {"DC": 1, "AC": 0} # just save play to use dc instead of dc50 because the latter does not exist # TODO
-    CHANNEL_RANGE = [{"rangeV": 50E-3,  "apivalue": 2, "rangeStr": "50 mV"},
+    CHANNEL_RANGE = [{"rangeV": 20E-3,  "apivalue": 1, "rangeStr": "20 mV"},
+                     {"rangeV": 50E-3,  "apivalue": 2, "rangeStr": "50 mV"},
                      {"rangeV": 100E-3, "apivalue": 3, "rangeStr": "100 mV"},
                      {"rangeV": 200E-3, "apivalue": 4, "rangeStr": "200 mV"},
                      {"rangeV": 500E-3, "apivalue": 5, "rangeStr": "500 mV"},
@@ -66,27 +67,30 @@ class picoscope:
                      {"rangeV": 10.0,   "apivalue": 9, "rangeStr": "10 V"},
                      {"rangeV": 20.0,   "apivalue": 10, "rangeStr": "20 V"},
                      ]
-    MAXOFFSETDC={50E-3: 2000, # V, mV
-                100E-3: 2000,
-                200E-3: 2000,
-                500E-3: 5000,
-                1.0: 4500,
-                2.0: 3500,
-                5.0: 500,
-                10.0: 0,
-                20.0: 0,
-                }   
-    MAXOFFSETAC={50E-3: 2000, # V, mV
-                100E-3: 2000,
-                200E-3: 2000,
-                500E-3: 10000,
-                1.0: 10000,
-                2.0: 10000,
-                5.0: 35000,
-                10.0: 30000,
+    MAXOFFSETDC={20E-3: 250, # V, mV
+                50E-3: 250, # V, mV
+                100E-3: 250,
+                200E-3: 250,
+                500E-3: 2500,
+                1.0: 2500,
+                2.0: 2500,
+                5.0: 20000,
+                10.0: 20000,
                 20.0: 20000,
-                } 
-    MINTRIGGER={50E-3: 4, # V, mV
+                }   
+    MAXOFFSETAC={20E-3: 250, # V, mV
+                50E-3: 250, # V, mV
+                100E-3: 250,
+                200E-3: 250,
+                500E-3: 2500,
+                1.0: 2500,
+                2.0: 2500,
+                5.0: 20000,
+                10.0: 20000,
+                20.0: 20000,
+                }  
+    MINTRIGGER={20E-3:1,
+                50E-3: 4, # V, mV
                 100E-3: 8,
                 200E-3: 10,
                 500E-3: 25,

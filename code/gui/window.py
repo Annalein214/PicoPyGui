@@ -39,7 +39,8 @@ class ApplicationWindow(MyGui.QMainWindow):
 
     def closeEvent(self, ce):
         self.daq.close()
-        self.hw.close()
+        try: self.hw.close()
+        except: self.log.warning("Hardware thread already closed")
         self.log.endLogging() # only adds a print
         self.fileQuit()
 

@@ -14,8 +14,8 @@ class displayConfigWidget(MyGui.QWidget):
         self.log=log
         self.daq=daq
         self.settings=settings
-        #self.graph=graph todo remove
-        #self.hw=hw todo remove
+        #self.graph=graph todo remove?
+        self.hw=hw 
 
     # -------------------------------------------------
         # layout
@@ -291,11 +291,11 @@ class displayConfigWidget(MyGui.QWidget):
                 if self.settings.save_avg_std[channel]:
                     options.append(channel+":Std.Deviation")
         # HWT add external hardware options here
-        if self.settings.useDummy: 
+        if self.settings.useDummy and self.hw.dummy!=None: 
             options.append("HW:Dummy")
-        if self.settings.useLightsensor: 
+        if self.settings.useLightsensor and self.hw.lightsensor!=None: 
             options.append("HW:Lightsensor")
-        if self.settings.useHV: 
+        if self.settings.useHV and self.hw.hv!=None: 
             options.append("HW:HV")
         return options
 
@@ -309,10 +309,10 @@ class displayConfigWidget(MyGui.QWidget):
                 if self.settings.save_avg_std[channel]:
                     options.append(channel+":Std.Dev.")
         # HWT add external hardware options here
-        if self.settings.useDummy: 
+        if self.settings.useDummy and self.hw.dummy!=None: 
             options.append("HW:Dummy")
-        if self.settings.useLightsensor: 
+        if self.settings.useLightsensor and self.hw.lightsensor!=None: 
             options.append("HW:Lightsensor")
-        if self.settings.useHV: 
+        if self.settings.useHV and self.hw.hv!=None: 
             options.append("HW:HV")
         return options
