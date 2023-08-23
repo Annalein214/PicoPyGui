@@ -44,6 +44,7 @@ class daq(QThread):
         self.out.info("\tSleep Time %fs"% self.sleeptime)
 
         self.log.info("Measurement log file in %s" % (self.out.filename))
+        self.log.info("Pretrigger Samples %.2f"% self.settings.nopretriggersamples)
 
         self.settings.saveMeasurement=False # reset to false so that the user can decide 
 

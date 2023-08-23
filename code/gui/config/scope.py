@@ -300,13 +300,7 @@ class scopeConfigWidget(MyGui.QWidget):
         if pretrigger<0 or pretrigger > 1: 
             self.log.error("Pre Trigger sample fraction needs to be between 0 and 1. I recommend 0.1")
             setText(self.choosePreTrig,"0.1")
-        self.settings.saveSetting("nopretriggersamples", pretrigger)
-
-
-    # --- Pretriggersamples ---
-        labelPretrig = createLabel("Pre-trigger Samples\n[Sampling Interval]")
-        self.choosePreTrig = createTextInput(self.settings.nopretriggersamples, self.updatePretrig)
-        
+        self.settings.saveSetting("nopretriggersamples", pretrigger)    
 
 
     def updateChEn(self):
