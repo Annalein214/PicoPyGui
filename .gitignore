@@ -1,6 +1,8 @@
 # Custom:
 data/
+code/settings.cfg
 
+# ---
 
 .DS_Store
 

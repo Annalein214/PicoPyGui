@@ -7,6 +7,12 @@ Main purposes are:
 2) live analyses (histograms, amplitudes, FFT)
 3) merge picoscope data with external hardware to have all on the same time axis  
 
+The following shows a screenshot of a full screen displaying:
+* the program on the right with the plot area on its left and the settings for the scope on the right
+* the console output on the upper left. Important messages are bold and colored.
+* overview of data and plot files that are produced dependent on the chosen settings (lower right)
+* one of the plots which are produced hourly: all data, of which the development over time can be displayed, is shown in one single plot for simple interpretation
+
 ![alt Overview of the app's functions](doc/All.png)
 
 I use this code to:
@@ -35,6 +41,7 @@ Software
 * Add the required scripts to drive scopes or hardware which is not yet supported (see hints below). 
 * Remove hardware code, which I added, but you don't need
 * Add code to get your custom live analysis plotted in the display (MANUAL TODO)
+Note: the program has dummy data for the scope and a dummy sensor added. This can be used for programming and debugging custom code. 
 
 ## Start
 
