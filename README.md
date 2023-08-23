@@ -7,6 +7,8 @@ Main purposes are:
 2) live analyses (histograms, amplitudes, FFT)
 3) merge picoscope data with external hardware to have all on the same time axis  
 
+![alt Overview of the app's functions](doc/All.png)
+
 I use this code to:
 * characterise high gain, low dark rate photomultipliers for single photon counting
 * measure the property of ice (luminescence, plasma light yield, etc) by adding many environmental sensors and slow control to this program (e.g. temperatures, humidity, high voltage, motors and switches controlled with Arduinos)
