@@ -732,19 +732,31 @@ class picoscope:
                 dataV[ch]=self.rawToV(ch, data[ch])
             else: 
                 dataV[ch]=[]
-        #print(type(dataV),dataV)
-        # Ch a on: <type 'list'> [array([[-0.00015139, -0.00054206],
-                #[-0.00015139, -0.00054206]]), 0, 0, array([[ 1.98461726,  1.98461726],
-                #[ 1.98461726,  1.98461726]])]
-        # Ch c off: <type 'list'> [0, array([[ 1.60153827,  1.60153827],
-                #[ 1.60153827,  1.60153827]]), array([[ 0.19846173,  0.19846173],
-                #[ 0.19846173,  0.19846173]]), array([[ 1.98461726,  1.98461726],
-                #[ 1.98461726,  1.98461726]])]
-
+                
         return np.array(dataV, dtype=object)
         
-    def setSigGenBuiltInSimple(self, offsetVoltage=0, pkToPk=2, waveType="Sine", frequency=1E6,
+    def setSigGenBuiltInSimple(self, 
+                                offsetVoltage=0, # volts
+                                pkToPk=2, waveType="Sine", frequency=1E6,
                                shots=1, triggerType="Rising", triggerSource="None"):
+
+        # Sine, square, triangle, DC voltage, ramp up, ramp down, sinc, Gaussian, half-sine.
+        # 0.03 Hz to 1 MHz
+        # Free-run, or from 1 to 1 billion counted waveform cycles or frequency sweeps
+        # ±2 V adjustable in approximately 1 mV
+        # infinite shots: PS3000A_SHOT_SWEEP_TRIGGER_CONTINUOUS_RUN; // 0xFFFFFFFF
+
+        '''
+        It is not possible to trigger the function generator in order to output a 
+        DC voltage. Instead define a waveform with a single value corresponding to 
+        another voltage level, e.g. 0 V, and set the rest of the values to correspond 
+        to the maximum amplitude (in this case 32767).
+        Set the peak to peak value such that the maximum amplitude values will be 
+        output at the correct voltage level, e.g. use 2000000 for a 1 V ‘DC voltage’.
+        When the arbitrary waveform function is called, the output will correspond 
+        to the initial value of the waveform. When the trigger occurs, the first 
+        sample will be output, followed by the samples at the maximum amplitude value.
+        '''
 
         if triggerSource is None:
             triggerSource = "None"
@@ -757,15 +769,27 @@ class picoscope:
 
         m = self.lib.ps3000aSetSigGenBuiltIn(
             c_int16(self.handle),
-            c_int32(int(offsetVoltage * 1000000)),
-            c_int32(int(pkToPk        * 1000000)),
+            c_int32(int(offsetVoltage * 1000000)), # microvolts!
+            c_int32(int(pkToPk        * 1000000)), # microvolts!
             c_int16(waveType),
-            c_float(frequency), c_float(frequency),
-            c_float(0), c_float(0), c_enum(0), c_enum(0),
-            c_uint32(shots), c_uint32(0),
-            c_enum(triggerType), c_enum(triggerSource),
-            c_int16(0))
+            c_float(frequency), c_float(frequency), # start and stop frequency
+            c_float(0), # increment
+            c_float(0), # dwelltime
+            c_enum(0), # sweeptype
+            c_enum(0), # operation
+            c_uint32(shots), # 0: sweep, 1... shots, 
+            c_uint32(0), # sweeps
+            c_enum(triggerType), 
+            c_enum(triggerSource),
+            c_int16(0), # extInThreshold
+            )
         self.checkResult(m)
+
+    def sigGenSoftwareControl(self,):
+        # execute software trigger
+        m = self.lib.ps3000aSigGenSoftwareControl(c_int16(self.handle), 1)
+        self.checkResult(m)
+
         
     class ps3000a_TRIGGER_INFO(Structure):
             _fields_ = [("status", c_uint32),

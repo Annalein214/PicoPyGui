@@ -14,8 +14,7 @@ class Sensor:
 
     def readDevice(self):
         # get the data
-        if not self.online:
-            voltage=np.random.random()
+        voltage=np.random.random()
         return voltage
 
     # -----------------------------------------------------------------------------
@@ -69,8 +68,8 @@ class Sensor:
                     #print "Port found", port
                     
         if self.port==None:
-            self.log.info(TAG+"No port found. Measurement switched off! For the dummy this is ok.")
-            self.online=False
+            self.log.info(TAG+"No port found. Measurement switched off! For the dummy this is ok. Use it anyhow.")
+            self.online=True
         else:
             self.log.info(TAG+"Using device at port %s for photodiode" % self.port)
             self.online=True

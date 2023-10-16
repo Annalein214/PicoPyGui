@@ -38,6 +38,36 @@ class Photodiode:
         #self.device.close()
         return voltage
 
+    def readTemperature(self):
+        # get the data
+        #self.initialise() # seems to be no issue if this is done repeatedly
+        if self.device==None:
+            return False
+
+        # you need to do this twice in order to get a result at the first time
+        self.device.write(b'2')
+        raw = self.device.readline()
+        self.device.write(b'2')
+        raw = self.device.readline()
+
+        # the device gives a float value in millivoltage after the string "Diode "
+        
+        #raw=self.reader.readline()
+        #self.log.debug(TAG+": Raw1: %s"% raw)
+        string = str(raw, 'utf-8').strip()
+        #self.log.debug(TAG+": Raw2: %s"% string)
+
+        #string = string.replace("\\r", "").replace("\\n", "").replace("b'", "").replace("'", "")
+        #self.log.debug(TAG+": Raw3: %s"% string)
+
+        if not "Temperature" in str(string):
+            raise RuntimeError(TAG+": Value not from DiodeTemperature: %s" % raw)
+        voltage=float(string.split(" ")[1])
+
+        #self.log.debug(TAG+": Voltage [mV]: %f"% voltage)
+        #self.device.close()
+        return voltage
+
     def initialise(self,):
         # start connection to device, used by test()
         self.device=serial.Serial(str(self.port), 9600,timeout=2, write_timeout = 1)
@@ -146,6 +176,7 @@ if __name__ == "__main__":
     t=Photodiode(log)
     while True:
         print (t.readDevice())
+        print (t.readTemperature())
         sleep(1)
 
 

@@ -9,7 +9,7 @@ from glob import glob
 import matplotlib.gridspec as gridspec
 
 
-from code.helpers import timestring_humanReadable, dateTime_plusHours, dateTime
+from code.helpers import timestring_humanReadable, dateTime_plusHours, dateTime, linestyles
 
 
 class hourlyPlot:
@@ -135,9 +135,18 @@ class hourlyPlot:
                     # HWT add your unit here
                     if "Lightsensor" in mode:
                         yUnit="V"
+                    elif "Roomtemp" in mode:
+                        yUnit="°C"
                     elif "HV" in mode:
                         yUnit="V"
                         data=data[:,1]
+                    elif "Temperature" in mode:
+                        yUnit="°C"
+                        data_temp=data
+                        # restructure data
+                        data=[]
+                        for i in range(len(data_temp[0])):
+                            data.append(data_temp[:,i])
                     
                 else: 
                     yUnit="V"
@@ -147,7 +156,14 @@ class hourlyPlot:
                         yUnit="mV"
                         data*=1000
 
-                axes[i].plot(time2,data, "-o", linewidth=1, markersize=1.5, alpha=0.7, )
+                if not "Temperature" in mode:
+                    axes[i].plot(time2,data, "-o", linewidth=1, markersize=1.5, alpha=0.7, )
+                else:
+                    for i in range(len(data)):
+                        axes[i].plot(time2,data[i], 
+                            marker="o", linewidth=1, markersize=1.5, alpha=0.7, 
+                            linestyle=linestyles[i], label="Sensor "+str(i))
+                    axes[i].legend(loc="best")
 
                 axes[i].grid(True)
                 axes[i].set_ylabel("%s %s / %s" % (channel, mode, yUnit), fontsize=8)
@@ -340,9 +356,17 @@ class hourlyPlot:
             # HWT add your unit here and maybe the data
             if "Lightsensor" in mode:
                 yUnit="V"
+            elif "Roomtemp" in mode:
+                yUnit="°C"
             elif "HV" in mode:
                 yUnit="V"
                 data=data[:,1]
+            elif "Temperature" in mode:
+                yUnit="°C"
+                data_temp=data
+                data=[]
+                for i in range(len(data_temp[0])):
+                    data.append(data_temp[:,i])
         else: 
             yUnit="V"
             ma=np.max(data)
@@ -364,7 +388,14 @@ class hourlyPlot:
                 time=time[:-1]
             else:
                 data=data[:-1]
-        ax1.plot(time,data, "-o", linewidth=1, markersize=1.5, alpha=0.7, )
+        if not "Temperature" in mode:
+            ax1.plot(time,data, "-o", linewidth=1, markersize=1.5, alpha=0.7, )
+        else:
+            for i in range(len(data)):
+                ax1.plot(time,data[i], 
+                            marker="o", linewidth=1, markersize=1.5, alpha=0.7, 
+                            linestyle=linestyles[i], label="Sensor "+str(i))
+                ax1.legend(loc="best")
 
         ax1.grid(True)
         ax1.set_ylabel("%s / %s" % (mode, yUnit))

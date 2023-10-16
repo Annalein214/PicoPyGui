@@ -81,7 +81,7 @@ Search in the code for the string "HWT" to find all locations where you need to 
 List of what to do:
 * script reading out the sensor in code/sensors
 * in settings.cfg add a variable with name useSENSORNAME and add a bool 
-* add user choice for this variable in code/config/hw.py 
+* add user choice for this variable in code/gui/config/hw.py 
 * add choice in code/config/display.py for time and str wise display (need to change much more code if you want to see waveform or histogram)
 * import your hardware script in code/sensors/main.py and add the code as marked with "HWT"
 * in code/graph add the connection to code/sensors/main.py with linking the data array. Also give name and units. 

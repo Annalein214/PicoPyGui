@@ -40,6 +40,15 @@ class hardwareConfigWidget(MyGui.QWidget):
                             self.settings.useLightsensor,
                             self.updateHW)
 
+        # --- Temperature sensor next to light diode ----
+        self.chooseRoomtemp=createCheckbox("Roomtemp", # don't change name, it is processed elsewhere
+                            self.settings.useRoomtemp,
+                            self.updateHW)
+
+        # --- Temperature sensors ----
+        self.chooseTemp=createCheckbox("Temperature", # don't change name, it is processed elsewhere
+                            self.settings.useTemp,
+                            self.updateHW)
         # --- HV ----
         self.chooseHV=createCheckbox("HV", # don't change name, it is processed elsewhere
                             self.settings.useHV,
@@ -60,6 +69,10 @@ class hardwareConfigWidget(MyGui.QWidget):
         # HWT add your widgets to the grid
         grid.addWidget(self.chooseDummy,       c,1)
         c+=1
+        grid.addWidget(self.chooseTemp,       c,1)
+        c+=1
+        grid.addWidget(self.chooseRoomtemp,       c,1)
+        c+=1
         grid.addWidget(self.chooseLight,       c,1)
         c+=1
         grid.addWidget(self.chooseHV,       c,1)
@@ -71,6 +84,7 @@ class hardwareConfigWidget(MyGui.QWidget):
 
 
     def updateHW(self):
+        #print("updateHW")
 
         time = getTextInput(self.chooseTime)
         if time=="" or time=="-": time=1
@@ -90,20 +104,34 @@ class hardwareConfigWidget(MyGui.QWidget):
 
         # HWT handle user choice here, also handle the impact on possible choices in the display tab
         self.simpleChoice(self.settings.useDummy, "Dummy", self.chooseDummy, "useDummy", self.hw.dummy)         
-        self.simpleChoice(self.settings.useLightsensor, "Lightsensor", self.chooseLight, "useLightsensor",self.hw.lightsensor)        
+        self.simpleChoice(self.settings.useLightsensor, "Lightsensor", self.chooseLight, "useLightsensor",self.hw.lightsensor)
+        self.simpleChoice(self.settings.useRoomtemp, "Roomtemp", self.chooseRoomtemp, "useRoomtemp",self.hw.roomtemp)
+        self.simpleChoice(self.settings.useTemp, "Temperature", self.chooseTemp, "useTemp",self.hw.temperaturesensors)        
         self.simpleChoice(self.settings.useHV, "HV", self.chooseHV, "useHV",self.hw.hv)        
+        #print("....")
 
-
-    def simpleChoice(self,mode, modeName, selectMode, varName, objict):
+    def simpleChoice(self,settings, modeName, selectMode, varName, objict):
+        #print(modeName, objict)
+        #if objict!=None:
+        #    print(objict.online)
         mode=getCheckboxEnabled(selectMode)
         if mode and objict!=None and objict.online:
-            self.settings.saveSetting(varName, True)
+            settings = True
+            self.settings.saveSetting(varName, settings)
+            #print("simpleChoice", selectMode, mode, settings)
         else:
-            self.settings.saveSetting(varName, False)
-            setCheckbox(selectMode, False)
+            if mode: # user wanted to switch on, but it is not possible
+                checkBoxDisable(selectMode) # disable, i.e. make it gray
+                mode=False # correct the user choice
+            settings = False
+            self.settings.saveSetting(varName, settings)
+            setCheckbox(selectMode, settings)
+            #print("simpleChoice", selectMode, mode, settings)
 
-        if not mode:
-            self.switchOption(modeName, mode, self.settings.time_ch_mode1, "time_ch_mode1")
+
+        # delete hardware from display if it is not chosen
+        if not mode: 
+            self.switchOption(modeName, mode,self.settings.time_ch_mode1, "time_ch_mode1")
             self.switchOption(modeName, mode,self.settings.time_ch_mode2, "time_ch_mode2")
             self.switchOption(modeName, mode,self.settings.str_ch_mode1, "str_ch_mode1")
             self.switchOption(modeName, mode,self.settings.str_ch_mode2, "str_ch_mode2")

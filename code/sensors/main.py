@@ -8,6 +8,7 @@ import time, os
 from code.sensors.dummy import Sensor
 from code.sensors.lightsensor.photodiode import Photodiode
 from code.sensors.hv.Caen import HV
+from code.sensors.temperature.temperaturesensors import TempSensors
 
 class external(QThread):
 
@@ -53,7 +54,7 @@ class external(QThread):
         self.setupHardware()
         self.prepareAnalysis()
 
-        self.out.debug("HW measurement started"+str(self._threadIsStopped))
+        self.out.debug("HW measurement started "+str(self._threadIsStopped))
         
         while not self._threadIsStopped:
             self.startBlock=time.time()
@@ -67,11 +68,24 @@ class external(QThread):
             if self.lightsensor!=None: #
                 try:
                     val=self.lightsensor.readDevice()
-                    #rint(self.lightVals)
                     self.lightVals.append(val)
                 except Exception as e:
                     self.log.error("ERROR in Lightsensor reading: %s"%(str(e)))
                     self.lightVals.append(-1)
+            if self.roomtemp!=None: #
+                try:
+                    val=self.roomtemp.readTemperature()
+                    self.roomVals.append(val)
+                except Exception as e:
+                    self.log.error("ERROR in Roomtemp sensor reading: %s"%(str(e)))
+                    self.roomVals.append(-1)
+            if self.temperaturesensors!=None: #
+                try:
+                    val=self.temperaturesensors.readDevice()
+                    self.tempVals.append(val)
+                except Exception as e:
+                    self.log.error("ERROR in Temperature reading: %s"%(str(e)))
+                    self.tempVals.append((-999, -999, -999, -999))
             if self.hv!=None:
                 try:               
                     val=self.hv.readDevice()
@@ -100,7 +114,9 @@ class external(QThread):
         '''
         self.dummyVals = []
         self.lightVals = []
+        self.roomVals =[]
         self.hvVals = []
+        self.tempVals = []
         self.time=[]
 
     def analysis(self):
@@ -128,8 +144,12 @@ class external(QThread):
             self.save("HW_Dummy", self.dummyVals)
         if self.lightsensor!=None:
             self.save("HW_Lightsensor", self.lightVals)
+        if self.roomtemp!=None:
+            self.save("HW_Roomtemp", self.roomVals)
         if self.hv!=None:
             self.save("HW_HV", self.hvVals)
+        if self.temperaturesensors!=None:
+            self.save("HW_Temperature", self.tempVals)
         # Update settings
         self.rounds+=1
         self.lastSaved = self.endtime
@@ -174,13 +194,19 @@ class external(QThread):
 
         try:
             self.lightsensor = Photodiode(self.log)
+            self.roomtemp = self.lightsensor
             if self.lightsensor.online==False:
                 self.settings.useLightsensor=False
+                self.settings.useRoomtemp = False
                 self.lightsensor=None
+                self.roomtemp=None
+                self.log.error("Photodiode and Roomtemperature not online. Switch off.")
         except:
-            self.log.error("Cannot load hardware Photodiode. Switch off.")
+            self.log.error("Cannot load hardware Photodiode and Roomtemperature. Switch off.")
             self.settings.useLightsensor=False
             self.lightsensor=None
+            self.settings.useRoomtemp = False
+            self.roomtemp=None
 
         try:
             self.hv = HV(self.log)
@@ -191,6 +217,17 @@ class external(QThread):
             self.log.error("Cannot load hardware Photodiode. Switch off.")
             self.settings.useHV=False
             self.hv=None
+
+        try:
+            self.temperaturesensors = TempSensors(self.log)
+            if self.temperaturesensors.online==False:
+                self.settings.useTemp=False
+                self.temperaturesensors=None
+                self.log.error("Temperature sensor offline. Switch off.")
+        except:
+            self.log.error("Cannot load hardware Temperature. Switch off.")
+            self.settings.useTemp=False
+            self.temperaturesensors=None
         
 
     def setDefault(self):
@@ -200,10 +237,12 @@ class external(QThread):
         self._threadIsStopped=True # use this to stop the thread (effect is not directly!)
         # --- run -----
         self.startthread=0 # time when thread started
-        # HWT initialize variable
+        # HWT initialize variable which points to the device
         self.dummy=None
         self.lightsensor=None
         self.hv=None
+        self.temperaturesensors=None
+        self.roomtemp=None
         
     def close(self):
         self.dummy.close()
@@ -211,12 +250,19 @@ class external(QThread):
 
         if not self.opts.test:
             # HWT close your stuff here
-            if self.lightsensor!=None:
-                self.lightsensor.close()
+            if self.lightsensor!=None or self.roomtemp != None:
+                try: self.lightsensor.close()
+                except: pass
+                try: self.roomtemp.close()
+                except: pass
                 self.lightsensor=None
+                self.roomtemp=None
             if self.hv!=None:
                 self.hv.close()
                 self.hv=None
+            if self.temperaturesensors!=None:
+                self.temperaturesensors.close()
+                self.temperaturesensors=None
 
         self.log.info("Hardware closed. Good night!")
 

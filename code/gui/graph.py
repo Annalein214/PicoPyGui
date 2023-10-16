@@ -10,6 +10,8 @@ from matplotlib.ticker import MaxNLocator, FormatStrFormatter
 from PyQt5 import QtWidgets, QtCore
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 MyGui=QtWidgets
+
+from code.helpers import linestyles
     
 import random, time, traceback
 import numpy as np
@@ -198,32 +200,44 @@ class plotWidget(FigureCanvas):
                 channel=""
 
             if "Triggerrate" in str_ch_mode:
-                value = self.daq.rate[-1]
+                value = "%.2e" % self.daq.rate[-1]
                 title = "Triggerrate"
                 yUnit = "Hz"
             elif "Std" in mode:
-                value = self.daq.std[channel][-1]
+                value = "%.2e" % self.daq.std[channel][-1]
                 title = "Std. Dev. Ch. %s" % channel
                 yUnit = "V"
             elif "Average" in mode:
-                value = self.daq.avg[channel][-1]
+                value = "%.2e" % self.daq.avg[channel][-1]
                 title = "Average Ch. %s" % channel
                 yUnit = "V"
             # HWT add custom instructions for hardware
             elif "Dummy" in mode:
-                value = self.hw.dummyVals[-1]
+                value = "%.2e" % self.hw.dummyVals[-1]
                 title = "Ext. Dummy"
                 yUnit = "V"
             elif "Lightsensor" in mode:
-                value = self.hw.lightVals[-1]
+                value = "%.2e" % self.hw.lightVals[-1]
                 title = "Lightsensor"
                 yUnit = "V"
+            elif "Roomtemp" in mode:
+                value = "%.1f" % self.hw.roomVals[-1]
+                title = "Roomtemp"
+                yUnit = "°C"
             elif "HV" in mode:
-                value = self.hw.hvVals[-1][1]
+                value = "%.2e" % self.hw.hvVals[-1][1]
                 title = "HV"
                 yUnit = "V"
+            elif "Temperature" in mode:
+                values = self.hw.tempVals[-1]
+                title = "Temps:"
+                yUnit = "°C"
+                value = ""
+                for v in values:
+                    value+="%.1f %s; " % (float(v), yUnit)
+                value=value[:-(len(yUnit))]
 
-            text="%s: %.2e %s" % (title,value,yUnit)
+            text="%s: %s %s" % (title,value,yUnit)
 
             if nbr < 3:
                 ax=self.axW
@@ -240,7 +254,8 @@ class plotWidget(FigureCanvas):
 
     def plotTime(self,nbr):
 
-        # first check which of the variables and settingss to choose:
+
+        # first check which of the variables and settings to choose:
         if nbr==1:
             time_ch_mode=self.settings.time_ch_mode1
             ax=self.axT1
@@ -256,6 +271,9 @@ class plotWidget(FigureCanvas):
                 mode=time_ch_mode.split(":")[1]
             else:
                 channel=""
+                mode=time_ch_mode
+
+            #print(time_ch_mode, channel, mode)
 
             if "Triggerrate" in time_ch_mode:
                 values = self.daq.rate
@@ -283,6 +301,11 @@ class plotWidget(FigureCanvas):
                 title = "Lightsensor"
                 yUnit = "V"
                 yLabel="Value"
+            elif "Roomtemp" in mode:
+                values = self.hw.roomVals
+                title = "Roomtemp"
+                yUnit = "°C"
+                yLabel="Temperature"
             elif "HV" in mode:
                 values= np.array(self.hw.hvVals)
                 #print(values)
@@ -292,8 +315,18 @@ class plotWidget(FigureCanvas):
                 title = "HV"
                 yUnit = "V"
                 yLabel="Voltage"
+            elif "Temperature" in mode:
+                values_temp= np.array(self.hw.tempVals)
+                # get all temperatures separately and make a legend added to the title
+                values=[]
+                title = "Temps: "
+                for i in range(len(values_temp[0])):
+                    values.append(values_temp[:,i])
+                    title+="%s (%s); " % ("Sensor "+str(i), linestyles[i]) 
+                yUnit = "°C"
+                yLabel="Temperature"
 
-            
+            # select correct x values for the time
             if "HW" == channel:
                 time=(np.array(self.hw.time) - self.daq.startthread) / 60 # from unix time to minutes since measurement started
                 # self.daq.startthread is common start point!
@@ -302,7 +335,7 @@ class plotWidget(FigureCanvas):
 
             # strange mismatch of len(time) and len(values) only happens few times
             # handle it like this for now, but need to investigate - TODO
-            if len(time)!=len(values) and abs(len(time)-len(values))<2:
+            if len(time)!=len(values) and abs(len(time)-len(values))<2 and not ("Temperature" in mode):
                 time=list(time)
                 values=list(values)
                 if len(time)>len(values):
@@ -310,9 +343,15 @@ class plotWidget(FigureCanvas):
                 else:
                     values=values[:-1]
             #print(values)
-            ax.plot(time, values, "-o", 
-                    linewidth=1, markersize=1, 
-                    alpha=0.7, color="C%d"%nbr)
+            if not "Temperature" in mode:
+                ax.plot(time, values, "-o", 
+                        linewidth=1, markersize=1, 
+                        alpha=0.7, color="C%d"%nbr)
+            else:
+                for i in range(len(values)):
+                    ax.plot(time, values[i], marker="o", 
+                        linewidth=1, markersize=1, 
+                        alpha=0.7, color="C%d"%nbr, linestyle=linestyles[i], label="Sensor "+str(i))
 
             #ax.yaxis.set_major_formatter(FormatStrFormatter('%.2e'))
 

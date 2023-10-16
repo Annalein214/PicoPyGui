@@ -77,3 +77,8 @@ def recreateSelect(options, box, default):
 
 def clearSelect(box):
     box.clear()
+
+# ----- Disable ----------------------------------
+
+def checkBoxDisable(box):
+    box.setEnabled(False)

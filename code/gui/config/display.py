@@ -295,8 +295,12 @@ class displayConfigWidget(MyGui.QWidget):
             options.append("HW:Dummy")
         if self.settings.useLightsensor and self.hw.lightsensor!=None: 
             options.append("HW:Lightsensor")
+        if self.settings.useRoomtemp and self.hw.roomtemp!=None: 
+            options.append("HW:Roomtemp")
         if self.settings.useHV and self.hw.hv!=None: 
             options.append("HW:HV")
+        if self.settings.useTemp and self.hw.temperaturesensors!=None: 
+            options.append("HW:Temperature")
         return options
 
     def getStrOptions(self):
@@ -313,6 +317,10 @@ class displayConfigWidget(MyGui.QWidget):
             options.append("HW:Dummy")
         if self.settings.useLightsensor and self.hw.lightsensor!=None: 
             options.append("HW:Lightsensor")
+        if self.settings.useRoomtemp and self.hw.roomtemp!=None: 
+            options.append("HW:Roomtemp")
         if self.settings.useHV and self.hw.hv!=None: 
             options.append("HW:HV")
+        if self.settings.useTemp and self.hw.temperaturesensors!=None: 
+            options.append("HW:Temperature")
         return options
