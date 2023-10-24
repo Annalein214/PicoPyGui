@@ -362,7 +362,7 @@ class plotWidget(FigureCanvas):
                 else:
                     for i in range(len(values)):
                         values[i]=values[i][:-1]
-                print("CORRECTED:", len(time), len(values[0]))
+                #print("CORRECTED:", len(time), len(values[0]))
             #print(values)
             if not "Temperature" in mode:
                 ax.plot(time, values, "-o", 
