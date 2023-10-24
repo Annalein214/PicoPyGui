@@ -103,7 +103,7 @@ class hourlyPlot:
                 plt.setp(axes[i+1].get_xticklabels(), visible=False)
 
 
-        i=0
+        i=0 # axis number
         for fylename in files:
             time2=time
             if "Triggerrate" in fylename or \
@@ -145,8 +145,8 @@ class hourlyPlot:
                         data_temp=data
                         # restructure data
                         data=[]
-                        for i in range(len(data_temp[0])):
-                            data.append(data_temp[:,i])
+                        for j in range(len(data_temp[0])):
+                            data.append(data_temp[:,j])
                     
                 else: 
                     yUnit="V"
@@ -159,10 +159,10 @@ class hourlyPlot:
                 if not "Temperature" in mode:
                     axes[i].plot(time2,data, "-o", linewidth=1, markersize=1.5, alpha=0.7, )
                 else:
-                    for i in range(len(data)):
-                        axes[i].plot(time2,data[i], 
-                            marker="o", linewidth=1, markersize=1.5, alpha=0.7, 
-                            linestyle=linestyles[i], label="Sensor "+str(i))
+                    for j in range(len(data)):
+                        axes[i].plot(time2,data[j], 
+                            marker="x", linewidth=1, markersize=1.5, alpha=0.7, 
+                            linestyle=linestyles[j], label="Sensor "+str(j))
                     axes[i].legend(loc="best")
 
                 axes[i].grid(True)

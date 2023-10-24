@@ -221,7 +221,10 @@ class plotWidget(FigureCanvas):
                 title = "Lightsensor"
                 yUnit = "V"
             elif "Roomtemp" in mode:
-                value = "%.1f" % self.hw.roomVals[-1]
+                if len(self.hw.roomVals)>0:
+                    value = "%.1f" % self.hw.roomVals[-1]
+                else:
+                    value=np.nan
                 title = "Roomtemp"
                 yUnit = "°C"
             elif "HV" in mode:
@@ -229,7 +232,10 @@ class plotWidget(FigureCanvas):
                 title = "HV"
                 yUnit = "V"
             elif "Temperature" in mode:
-                values = self.hw.tempVals[-1]
+                if len(self.hw.tempVals)>0:
+                    values = self.hw.tempVals[-1]
+                else:
+                    values=[np.nan, np.nan, np.nan]
                 title = "Temps:"
                 yUnit = "°C"
                 value = ""
@@ -320,9 +326,10 @@ class plotWidget(FigureCanvas):
                 # get all temperatures separately and make a legend added to the title
                 values=[]
                 title = "Temps: "
-                for i in range(len(values_temp[0])):
-                    values.append(values_temp[:,i])
-                    title+="%s (%s); " % ("Sensor "+str(i), linestyles[i]) 
+                if len(values_temp)>0:
+                    for i in range(len(values_temp[0])):
+                        values.append(values_temp[:,i])
+                        title+="%s (%s); " % ("Sensor "+str(i), linestyles[i]) 
                 yUnit = "°C"
                 yLabel="Temperature"
 
@@ -334,20 +341,35 @@ class plotWidget(FigureCanvas):
                 time=(np.array(self.daq.time) - self.daq.startthread) / 60 # from unix time to minutes since measurement started
 
             # strange mismatch of len(time) and len(values) only happens few times
-            # handle it like this for now, but need to investigate - TODO
-            if len(time)!=len(values) and abs(len(time)-len(values))<2 and not ("Temperature" in mode):
+            # handle it like this for now, but need to investigate - TOD()
+            if len(time)!=len(values) and abs(len(time)-len(values))<2 and not "Temperature" in mode:
+                #self.log.warning("Lengths of arrays do not match! %s %s %d %d"%( channel, mode, len(time), len(values)))
                 time=list(time)
                 values=list(values)
                 if len(time)>len(values):
                     time=time[:-1]
                 else:
                     values=values[:-1]
+                #print("CORRECTED:", len(time), len(values))
+            else:
+
+              if len(values)>0 and type(values[0])!=float and len(time)!=len(values[0]) and abs(len(time)-len(values[0]))<2:
+                self.log.warning("Lengths of arrays do not match! %s %s %d %d"%( channel, mode, len(time), len(values[0])))
+                time=list(time)
+                values0=list(values[0])
+                if len(time)>len(values0):
+                    time=time[:-1]
+                else:
+                    for i in range(len(values)):
+                        values[i]=values[i][:-1]
+                print("CORRECTED:", len(time), len(values[0]))
             #print(values)
             if not "Temperature" in mode:
                 ax.plot(time, values, "-o", 
                         linewidth=1, markersize=1, 
                         alpha=0.7, color="C%d"%nbr)
             else:
+                #print(time, values, channel, mode)
                 for i in range(len(values)):
                     ax.plot(time, values[i], marker="o", 
                         linewidth=1, markersize=1, 
