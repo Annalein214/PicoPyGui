@@ -431,6 +431,13 @@ class daq(QThread):
         
         # ensure channel is enabled
         ok=self.setChannel(self.settings.triggerchannel, enable=True)
+        
+        self.out.info("Trigger: Channel %s, " %  (self.settings.triggerchannel) +\
+                              "Voltage %fV, " % (self.settings.triggervoltage/1000) +\
+                              "Mode %s, "% (self.settings.triggermode) +\
+                              "Delay %f, "% (self.settings.triggerdelay) +\
+                              "Timeout %f, "% (self.settings.triggertimeout))
+                              
         if not ok: return False
 
         try:
