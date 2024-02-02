@@ -353,7 +353,9 @@ class plotWidget(FigureCanvas):
                 #print("CORRECTED:", len(time), len(values))
             else:
 
-              if len(values)>0 and type(values[0])!=float and len(time)!=len(values[0]) and abs(len(time)-len(values[0]))<2:
+              #print("DEBUG", type(values), type(time))
+              #print("DEBUG", type(values[0]))
+              if len(values)>0 and type(values[0])!=float and type(values[0])!=np.float64 and len(time)!=len(values[0]) and abs(len(time)-len(values[0]))<2:
                 self.log.warning("Lengths of arrays do not match! %s %s %d %d"%( channel, mode, len(time), len(values[0])))
                 time=list(time)
                 values0=list(values[0])
