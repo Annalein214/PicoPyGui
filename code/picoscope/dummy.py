@@ -118,3 +118,5 @@ class dummyScope():
                          enabled=True):
 
         return True
+    def close(self):
+        pass

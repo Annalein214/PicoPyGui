@@ -175,8 +175,8 @@ if __name__ == "__main__":
     log=log()
     t=Photodiode(log)
     while True:
-        print (t.readDevice())
-        print (t.readTemperature())
+        print ("Diode value [V]", t.readDevice())
+        print ("Temperature value [C]",t.readTemperature())
         sleep(1)
 
 

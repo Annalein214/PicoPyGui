@@ -1,5 +1,5 @@
 '''
-adopted the picoscope 6000 code for the 3000a scopes
+adopted the picoscope 3000a code
 '''
 # run with python 3
 
@@ -15,52 +15,53 @@ import platform
 
 ##########################################################################################
 '''
-Changes to picoscope6000:
+Changes to 3xxxD:
 IMPORTANT: only valid for 3000D MSO not ABC
-- replaced all ps6000 with ps3000a
-- remove DC50
-- add setDigitalPort
+- replaced all ps3000a with ps5000a
+- adjust channels
+- adjust ports
+- adjust couplings (no DC50)
+- adjust MAX_VALUE
 - change numbers in timebase functions
 
-
 TODO: 
-- adjust for non xxxD scopes by setting proper time bases
-- setDigitalPort issue
-Traceback (most recent call last):
-  File "/Users/obertacke/sciebo/Lumi/Skripts/3_Picoscope/picogui/code/picoscope.py", line 791, in <module>
-    LogicLevel=mps.setDigitalPort(0, # 0 or 1
-  File "/Users/obertacke/sciebo/Lumi/Skripts/3_Picoscope/picogui/code/picoscope.py", line 342, in setDigitalPort
-    self.checkResult(m) # 0 if all ok
-  File "/Users/obertacke/sciebo/Lumi/Skripts/3_Picoscope/picogui/code/picoscope.py", line 280, in checkResult
-    raise IOError('Error calling %s: %s (%s)' % (str(inspect.stack()[1][3]), ecName, ecDesc))
-OSError: Error calling setDigitalPort:  ()
-
+- change resolution
+    - change time bases function accordingly
+    - implement change of resolution 
 '''
 ##########################################################################################
 
 class picoscope:
 
-    # ps3000a properties
-    LIBNAME = "ps3000a"
+    # ps5000a properties
+    LIBNAME = "ps5000a"
     NUM_CHANNELS = 4
+    # ADDPICO adjust channel number
     CHANNELS     = {"A": 0, "B": 1, "C": 2, "D": 3,
-                    "External": 4, "MaxChannels": 4, "TriggerAux": 5}
-    NUM_PORTS=2
-    PORTS = {"0": 0x80, "1":0x81}
-    PORTRANGE=5000 # -5V to 5V
+                    "External": 4, "MaxChannels": 4, "TriggerAux": 5} # TODO no idea what those are
+    # no digital ports available
+    #NUM_PORTS=2
+    #PORTS = {"0": 0x80, "1":0x81}
+    #PORTRANGE=5000 # -5V to 5V
+    # find the coupling in PS5000A_COUPLING, give api value in order of enum starting from 0
     CHANNEL_COUPLINGS = {"DC": 1, "AC": 0} # just save play to use dc instead of dc50 because the latter does not exist # TODO
-    CHANNEL_RANGE = [{"rangeV": 20E-3,  "apivalue": 1, "rangeStr": "20 mV"},
-                     {"rangeV": 50E-3,  "apivalue": 2, "rangeStr": "50 mV"},
-                     {"rangeV": 100E-3, "apivalue": 3, "rangeStr": "100 mV"},
-                     {"rangeV": 200E-3, "apivalue": 4, "rangeStr": "200 mV"},
-                     {"rangeV": 500E-3, "apivalue": 5, "rangeStr": "500 mV"},
-                     {"rangeV": 1.0,    "apivalue": 6, "rangeStr": "1 V"},
-                     {"rangeV": 2.0,    "apivalue": 7, "rangeStr": "2 V"},
-                     {"rangeV": 5.0,    "apivalue": 8, "rangeStr": "5 V"},
-                     {"rangeV": 10.0,   "apivalue": 9, "rangeStr": "10 V"},
-                     {"rangeV": 20.0,   "apivalue": 10, "rangeStr": "20 V"},
+    # find the following values in PS5000A_RANGE and give api value in order of enum starting from 1
+    CHANNEL_RANGE = [{"rangeV": 10E-3,  "apivalue": 1, "rangeStr": "10 mV"},
+                     {"rangeV": 20E-3,  "apivalue": 2, "rangeStr": "20 mV"},
+                     {"rangeV": 50E-3,  "apivalue": 3, "rangeStr": "50 mV"},
+                     {"rangeV": 100E-3, "apivalue": 4, "rangeStr": "100 mV"},
+                     {"rangeV": 200E-3, "apivalue": 5, "rangeStr": "200 mV"},
+                     {"rangeV": 500E-3, "apivalue": 6, "rangeStr": "500 mV"},
+                     {"rangeV": 1.0,    "apivalue": 7, "rangeStr": "1 V"},
+                     {"rangeV": 2.0,    "apivalue": 8, "rangeStr": "2 V"},
+                     {"rangeV": 5.0,    "apivalue": 9, "rangeStr": "5 V"},
+                     {"rangeV": 10.0,   "apivalue": 10, "rangeStr": "10 V"},
+                     {"rangeV": 20.0,   "apivalue": 11, "rangeStr": "20 V"},
                      ]
-    MAXOFFSETDC={20E-3: 250, # V, mV
+    # get from datasheet, copy full list from channel range
+    # probably only a function which I need to give a suggestion
+    MAXOFFSETDC={10E-3: 250, # V, mV
+                 20E-3: 250, # V, mV
                 50E-3: 250, # V, mV
                 100E-3: 250,
                 200E-3: 250,
@@ -72,7 +73,9 @@ class picoscope:
                 20.0: 20000,
                 }   
     MAXOFFSETAC=MAXOFFSETDC
-    MINTRIGGER={20E-3:1,
+    # TODO: no idea where I got that from
+    MINTRIGGER={20E-3:0,
+                20E-3:1,
                 50E-3: 4, # V, mV
                 100E-3: 8,
                 200E-3: 10,
@@ -83,14 +86,18 @@ class picoscope:
                 10.0: 500,
                 20.0: 1000,
                 }
+    # see values for direction in ps5000aSetSimpleTrigger
     THRESHOLD_TYPE = {"Above": 0,"Below": 1,"Rising": 2,"Falling": 3,"RiseOrFall": 4}
-    # from ps3000aMaximumValue
-    MAX_VALUE = 32512 # wrongly took from ps4000
-    MIN_VALUE = -32512 
-    # from PS3000A_EXT_MAX_VALUE
+    # take from ps5000aMaximumValue
+    # this is only valid for 8bits
+    MAX_VALUE = 32512 #32768-256
+    MIN_VALUE = -32512 # -32768
+    # from PS5000A_EXT_MAX_VALUE
     EXT_MAX_VALUE = 32767
     EXT_MIN_VALUE = -32767
     EXT_RANGE_VOLTS = 20
+
+    DEVICE_RESOLUTION={"8bit":0, "12bit":1, "14bit":2, "15bit":3, "16bit":4}
     
     WAVE_TYPES = {"Sine": 0, "Square": 1, "Triangle": 2,
                   "RampUp": 3, "RampDown": 4,
@@ -227,13 +234,13 @@ class picoscope:
         [0x122 , "PICO_CHANNEL_DISABLED_DUE_TO_USB_POWERED", "USB Power not sufficient to power all channels."]]
 
     def __init__(self):
-        print("DEBUG: Init 3000")
+        print("DEBUG: Init 5000")
         self.dummy=False
         self.CHRange = [5.0] * self.NUM_CHANNELS
         self.CHOffset = [0.0] * self.NUM_CHANNELS
         self.ProbeAttenuation = [1.0] * self.NUM_CHANNELS
         self.ChEnabled= [0] * self.NUM_CHANNELS
-        self.PortEnabled = [0] * self.NUM_PORTS
+        #self.PortEnabled = [0] * self.NUM_PORTS
         self.handle = None
         
         # to load the proper dll
@@ -255,20 +262,23 @@ class picoscope:
             self.lib = windll.LoadLibrary(self.LIBNAME + ".dll")
     
     def open(self):
+        print("DEBUG: Open 5000")
         c_handle = c_int16()
         serialNullTermStr = None # Passing None is the same as passing NULL
         # If serial (here serialNullTermStr) is NULL then the function opens the first scope found; 
         # otherwise, it tries to open the scope that matches the string.
-        m = self.lib.ps3000aOpenUnit(byref(c_handle), serialNullTermStr)
+        # resolution is changeble for 5xxx pico
+        resolution = 0 # force to 8bit for now
+        m = self.lib.ps5000aOpenUnit(byref(c_handle), serialNullTermStr, resolution)
         self.checkResult(m)
         self.handle = c_handle.value
-        self.name = 3000
+        self.name = 5000
       
     def close(self):
         if not self.handle is None:
-            m = self.lib.ps3000aStop(c_int16(self.handle))
+            m = self.lib.ps5000aStop(c_int16(self.handle))
             self.checkResult(m)
-            m = self.lib.ps3000aCloseUnit(c_int16(self.handle))
+            m = self.lib.ps5000aCloseUnit(c_int16(self.handle))
             self.checkResult(m)
             self.handle = None
         
@@ -307,13 +317,13 @@ class picoscope:
         
         s = create_string_buffer(256)
         requiredSize = c_int16(0)
-        m = self.lib.ps3000aGetUnitInfo(c_int16(self.handle), byref(s),
+        m = self.lib.ps5000aGetUnitInfo(c_int16(self.handle), byref(s),
                                        c_int16(len(s)), byref(requiredSize),
                                        c_enum(info))
         self.checkResult(m)
         if requiredSize.value > len(s):
             s = create_string_buffer(requiredSize.value + 1)
-            m = self.lib.ps3000aGetUnitInfo(c_int16(self.handle), byref(s),
+            m = self.lib.ps5000aGetUnitInfo(c_int16(self.handle), byref(s),
                                            c_int16(len(s)),
                                            byref(requiredSize), c_enum(info))
             self.checkResult(m)
@@ -327,44 +337,7 @@ class picoscope:
         else:
             return self.MAXOFFSETAC[voltagerange]
 
-    def setDigitalPort(self, port, # 0 or 1
-                         logiclevel_V=0, # -5v to 5v
-                         enabled=True):
-        '''
-        PS3000A_DIGITAL_PORT0 = 0x80 (digital channels 0–7) 
-        PS3000A_DIGITAL_PORT1 = 0x81 (digital channels 8–15)
-
-        '''
-
-        # ensure integer type 
-        enabled = int(bool(enabled))
-
-        # get the integer representing the port
-        if not isinstance(port, int):
-            portNum = self.PORTS[port]
-        else:
-            portNum = port
-
-        # convert from volts to adc
-        a2v = self.PORTRANGE / self.MAX_VALUE # 5V / 32767
-        logiclevel = int(logiclevel_V / a2v)
-
-        if logiclevel >= self.MAX_VALUE or logiclevel <= self.MIN_VALUE: 
-            raise IOError("Logic level of %fV outside allowed range (%f, %f)" % (
-                    logiclevel_V, -self.PORTRANGE,
-                    self.PORTRANGE))
-
-        m = self.lib.ps3000aSetDigitalPort(c_int16(self.handle), 
-                                           c_enum(portNum), 
-                                           c_int16(enabled), 
-                                           c_int16(logiclevel))
-        self.checkResult(m) # 0 if all ok
-
-        self.PortEnabled[portNum] = enabled
-        self.PortLevel[portNum]= logiclevel
-
-        return logiclevel
-        
+   
     def setChannel(self,channel='A', coupling="AC", VRange=2.0, VOffset=0.0, enabled=True,
                    BWLimited=False, probeAttenuation=1.0):
         
@@ -398,7 +371,7 @@ class picoscope:
         VRange = VRangeAPI["rangeV"] * probeAttenuation
         
         # set the channel 
-        m = self.lib.ps3000aSetChannel(c_int16(self.handle), c_enum(chNum),
+        m = self.lib.ps5000aSetChannel(c_int16(self.handle), c_enum(chNum),
                                       c_int16(enabled), c_enum(coupling),
                                       c_enum(VRangeAPI["apivalue"]), c_float(VOffset/probeAttenuation))
         # no bandwidth limiter for other than 6xxx
@@ -436,7 +409,7 @@ class picoscope:
 
         enabled = int(bool(enabled))
 
-        m = self.lib.ps3000aSetSimpleTrigger(
+        m = self.lib.ps5000aSetSimpleTrigger(
             c_int16(self.handle), c_int16(enabled),
             c_enum(trigSrc), c_int16(threshold_adc),
             c_enum(direction), c_uint32(delay), c_int16(timeout_ms))
@@ -447,6 +420,7 @@ class picoscope:
         return True
         
     def getTimeBaseNum(self, sampleTimeS):
+        # for 8bit resolution values are same as for 3xxxD scope
         """ Return sample time in seconds to timebase as int for API calls. """
         maxSampleTime = (((2 ** 32 - 1) - 2) / 125000000) ## obi change to 3000 D
         if sampleTimeS < 8E-9:
@@ -480,7 +454,7 @@ class picoscope:
             
         maxSamples = c_int32()
         sampleRate = c_float()
-        m = self.lib.ps3000aGetTimebase2(c_int16(self.handle), c_uint32(self.timebase),
+        m = self.lib.ps5000aGetTimebase2(c_int16(self.handle), c_uint32(self.timebase),
                                         c_uint32(noSamples), byref(sampleRate),
                                         c_int16(oversample), byref(maxSamples),
                                         c_uint32(segmentIndex))
@@ -497,7 +471,7 @@ class picoscope:
         
     def memorySegments(self, noSegments):
         nMaxSamples = c_uint32()
-        m = self.lib.ps3000aMemorySegments(c_int16(self.handle),
+        m = self.lib.ps5000aMemorySegments(c_int16(self.handle),
                                           c_uint32(noSegments), byref(nMaxSamples))
         self.checkResult(m) # 0 if all ok(m)
         self.maxSamples = nMaxSamples.value
@@ -505,7 +479,7 @@ class picoscope:
         return self.maxSamples
         
     def setNoOfCaptures(self, noCaptures):
-        m = self.lib.ps3000aSetNoOfCaptures(c_int16(self.handle), c_uint32(noCaptures))
+        m = self.lib.ps5000aSetNoOfCaptures(c_int16(self.handle), c_uint32(noCaptures))
         self.checkResult(m) # 0 if all ok(m)
         
     def runBlock(self, pretrig=0.0, segmentIndex=0):
@@ -513,17 +487,20 @@ class picoscope:
         numPreTrigSamples=int(round(nSamples * pretrig))
         numPostTrigSamples=int(round(nSamples * (1 - pretrig)))
         timeIndisposedMs = c_int32()
-        m = self.lib.ps3000aRunBlock(
+        m = self.lib.ps5000aRunBlock(
             c_int16(self.handle), c_uint32(numPreTrigSamples),
             c_uint32(numPostTrigSamples), c_uint32(self.timebase),
             c_int16(self.oversample), byref(timeIndisposedMs),
-            c_uint32(segmentIndex), c_void_p(), c_void_p())
+            c_uint32(segmentIndex), 
+            c_void_p(), # a pointer to the ps5000aBlockReady callback function that the driver will call when the data has been collected
+            c_void_p() # a void pointer that is passed to the ps5000aBlockReady callback function.The callback can use this pointer to return arbitrary data to the application
+            )
         self.checkResult(m) # 0 if all ok(m)
         return timeIndisposedMs.value
         
     def isReady(self):
         ready = c_int16()
-        m = self.lib.ps3000aIsReady(c_int16(self.handle), byref(ready))
+        m = self.lib.ps5000aIsReady(c_int16(self.handle), byref(ready))
         self.checkResult(m) # 0 if all ok(m)
         if ready.value:
             return True
@@ -544,7 +521,7 @@ class picoscope:
         # set buffer
         dataPtr = data.ctypes.data_as(POINTER(c_int16))
         numSamples = len(data)
-        m = self.lib.ps3000aSetDataBuffer(c_int16(self.handle), c_enum(channel),
+        m = self.lib.ps5000aSetDataBuffer(c_int16(self.handle), c_enum(channel),
                                          dataPtr, c_uint32(numSamples),
                                          c_enum(downSampleMode))
         self.checkResult(m) # 0 if all ok(m)
@@ -553,7 +530,7 @@ class picoscope:
         numSamplesReturned = c_uint32()
         numSamplesReturned.value = numSamples
         overflow = c_int16()
-        m = self.lib.ps3000aGetValues(
+        m = self.lib.ps5000aGetValues(
             c_int16(self.handle), c_uint32(startIndex),
             byref(numSamplesReturned), c_uint32(downSampleRatio),
             c_enum(downSampleMode), c_uint32(segmentIndex),
@@ -565,7 +542,7 @@ class picoscope:
         overflow = bool(overflow & (1 << channel))
         
         # clear buffer!
-        m = self.lib.ps3000aSetDataBuffer(c_int16(self.handle), c_enum(channel),
+        m = self.lib.ps5000aSetDataBuffer(c_int16(self.handle), c_enum(channel),
                                          c_void_p(), c_int32(0), c_uint32(0), c_enum(0))
         self.checkResult(m) # 0 if all ok(m)
         
@@ -573,7 +550,6 @@ class picoscope:
         
     def getDataV(self, numSamples=0, startIndex=0, downSampleRatio=1,
                    downSampleMode=0, segmentIndex=0, data=None):
-        # TODO set buffer for MSO
 
         if numSamples == 0:
             numSamples = min(self.maxSamples, self.noSamples)            
@@ -586,14 +562,7 @@ class picoscope:
                 dataPtr = data[ch].ctypes.data_as(POINTER(c_int16))
                 dataPtr2 = data[ch].ctypes.data_as(POINTER(c_int16)) # dummy, not used
                 numSamples = len(data[ch])
-                #m = self.lib.ps3000aSetDataBuffer(c_int16(self.handle), 
-                #                                  c_enum(ch),
-                #                                  dataPtr, 
-                #                                  c_int32(numSamples),# bufferLth
-                #                                  c_uint32(1), # segmentIndex # TODO new with MSO
-                #                                   c_enum(downSampleMode)                     , # mode
-                #                                  )
-                m = self.lib.ps3000aSetDataBuffers(c_int16(self.handle), 
+                m = self.lib.ps5000aSetDataBuffers(c_int16(self.handle), 
                                              c_enum(ch), 
                                              dataPtr, 
                                              dataPtr2, 
@@ -607,7 +576,7 @@ class picoscope:
         numSamplesReturned = c_uint32()
         numSamplesReturned.value = numSamples
         overflow = c_int16()
-        m = self.lib.ps3000aGetValues(
+        m = self.lib.ps5000aGetValues(
             c_int16(self.handle), c_uint32(startIndex),
             byref(numSamplesReturned), c_uint32(downSampleRatio),
             c_enum(downSampleMode), c_uint32(segmentIndex),
@@ -617,7 +586,7 @@ class picoscope:
         # clear buffer!
         for ch in range(self.NUM_CHANNELS):
             if self.ChEnabled[ch]==1:
-                m = self.lib.ps3000aSetDataBuffers(c_int16(self.handle), c_enum(ch),
+                m = self.lib.ps5000aSetDataBuffers(c_int16(self.handle), c_enum(ch),
                                          c_void_p(),c_void_p(), 0,0,0)
         self.checkResult(m) # 0 if all ok(m)
         
@@ -651,7 +620,7 @@ class picoscope:
         bufferPtr2 = buffer.ctypes.data_as(POINTER(c_int16)) # dummy
         bufferLth = len(buffer)
 
-        m = self.lib.ps3000aSetDataBuffers(c_int16(self.handle),
+        m = self.lib.ps5000aSetDataBuffers(c_int16(self.handle),
                                               c_enum(channel), 
                                               bufferPtr, 
                                               bufferPtr2,
@@ -662,7 +631,7 @@ class picoscope:
         self.checkResult(m) # 0 if all ok(m)
         
     def ClearDataBufferBulk(self, channel):
-        m = self.lib.ps3000aSetDataBuffers(
+        m = self.lib.ps5000aSetDataBuffers(
             c_int16(self.handle),c_enum(channel), 
             c_void_p(), c_void_p(), c_uint32(0), c_uint32(0), c_enum(0))
         self.checkResult(m) # 0 if all ok(m)
@@ -695,7 +664,7 @@ class picoscope:
             
         noOfSamples = c_uint32(numSamples)
         
-        m = self.lib.ps3000aGetValuesBulk(
+        m = self.lib.ps5000aGetValuesBulk(
                     c_int16(self.handle),
                     byref(noOfSamples),
                     c_uint32(fromSegment), c_uint32(toSegment),
@@ -730,7 +699,7 @@ class picoscope:
         # 0.03 Hz to 1 MHz
         # Free-run, or from 1 to 1 billion counted waveform cycles or frequency sweeps
         # ±2 V adjustable in approximately 1 mV
-        # infinite shots: PS3000A_SHOT_SWEEP_TRIGGER_CONTINUOUS_RUN; // 0xFFFFFFFF
+        # infinite shots: ps5000a_SHOT_SWEEP_TRIGGER_CONTINUOUS_RUN; // 0xFFFFFFFF
 
         '''
         It is not possible to trigger the function generator in order to output a 
@@ -760,7 +729,7 @@ class picoscope:
         #print("Wavetype", waveType)
         #print("Trigger" ,triggerType)
 
-        m = self.lib.ps3000aSetSigGenBuiltIn(
+        m = self.lib.ps5000aSetSigGenBuiltIn(
             c_int16(self.handle),
             c_int32(int(offsetVoltage * 1000000)), # microvolts!
             c_int32(int(pkToPk        * 1000000)), # microvolts!
@@ -780,11 +749,11 @@ class picoscope:
 
     def sigGenSoftwareControl(self,):
         # execute software trigger
-        m = self.lib.ps3000aSigGenSoftwareControl(c_int16(self.handle), 1)
+        m = self.lib.ps5000aSigGenSoftwareControl(c_int16(self.handle), 1)
         self.checkResult(m)
 
         
-    class ps3000a_TRIGGER_INFO(Structure):
+    class ps5000a_TRIGGER_INFO(Structure):
             _fields_ = [("status", c_uint32),
                         ("segmentIndex", c_uint32),
                         ("triggerIndex", c_uint32),
@@ -803,19 +772,19 @@ class picoscope:
         
         tinfo=[]
         for i in range(numSegmentsToCopy):
-            tinfo.append(self.ps3000a_TRIGGER_INFO)
+            tinfo.append(self.ps5000a_TRIGGER_INFO)
         tinfo = np.ascontiguousarray(
             tinfo
             )
         print("Before")
-        tinfoPtr=tinfo.ctypes.data_as(POINTER(self.ps3000a_TRIGGER_INFO))  
+        tinfoPtr=tinfo.ctypes.data_as(POINTER(self.ps5000a_TRIGGER_INFO))  
                 
         if platform.system() == 'Linux' or platform.system()=="Darwin":
             # gives segmentation fault
             pass
         else:
             try:
-                m=self.lib.ps3000aGetTriggerInfoBulk(c_int16(self.handle),
+                m=self.lib.ps5000aGetTriggerInfoBulk(c_int16(self.handle),
                                                     tinfoPtr,
                                                     c_uint32(fromSegment), 
                                                     c_uint32(toSegment),
@@ -852,19 +821,12 @@ if __name__ == "__main__":
     # if false use normal block mode
     rapid=True    
     getTriggerInfo=True
-    mso=False
     
     print("Set Channels")
     VRange=mps.setChannel(channel="A",coupling="DC",VRange=0.050,VOffset= 0.040,enabled=1,)
     VRange=mps.setChannel(channel="B",coupling="DC",VRange=0.500,VOffset=0.000,enabled=0,)
     VRange=mps.setChannel(channel="C",coupling="DC",VRange=0.050,VOffset= 0.000,enabled=0,)
     VRange=mps.setChannel(channel="D",coupling="DC",VRange=0.050,VOffset= 0.000,enabled=0,)
-
-    if mso: 
-        print("Set Digital Ports")
-        LogicLevel=mps.setDigitalPort(0, # 0 or 1
-                                      logiclevel_V=0, # -5v to 5v
-                                      enabled=True)
 
     print("Set Trigger")
     ret=mps.setSimpleTrigger("A",threshold_V=0.0,direction="Falling",delay=0,

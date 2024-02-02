@@ -70,8 +70,10 @@ class picoscope:
                 20.0: 1000,
                 }
     THRESHOLD_TYPE = {"Above": 0,"Below": 1,"Rising": 2,"Falling": 3,"RiseOrFall": 4}
-    MAX_VALUE = 32764 #32768-256
-    MIN_VALUE = -32764 # -32768
+    # take from PS6000_MAX_VALUE
+    MAX_VALUE = 32512 # 32764 value from PS4000 was taken!!! change to 6000
+    MIN_VALUE = -32512 # -32764 
+    # from PS5000A_EXT_MAX_VALUE
     EXT_MAX_VALUE = 32767
     EXT_MIN_VALUE = -32767
     EXT_RANGE_VOLTS = 20
