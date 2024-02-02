@@ -49,6 +49,7 @@ class picoscope:
     PORTS = {"0": 0x80, "1":0x81}
     PORTRANGE=5000 # -5V to 5V
     CHANNEL_COUPLINGS = {"DC": 1, "AC": 0} # just save play to use dc instead of dc50 because the latter does not exist # TODO
+    # values which are available for other but not this picoscope are not listed, but still counted in the api value, therefore it does not start with 0
     CHANNEL_RANGE = [{"rangeV": 20E-3,  "apivalue": 1, "rangeStr": "20 mV"},
                      {"rangeV": 50E-3,  "apivalue": 2, "rangeStr": "50 mV"},
                      {"rangeV": 100E-3, "apivalue": 3, "rangeStr": "100 mV"},

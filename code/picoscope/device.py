@@ -1,4 +1,4 @@
-if 0:
+if 1:
     from code.picoscope.picoscope3000 import picoscope as p3000
     from code.picoscope.picoscope5000 import picoscope as p5000
     from code.picoscope.picoscope6000 import picoscope as p6000 # ADDPICO in order to add another type of picoscope, add the library here
@@ -29,6 +29,8 @@ else:
             print("INFO: "+str)
         def warning(self,str):
             print("WARNING: "+str)
+        def msg(self, str):
+            print("MSG: "+str)
 
     log=log()
 
@@ -66,8 +68,9 @@ class deviceShelf():
                 device.open() # no ide 
                 devices.append(device)
             except Exception as e:
-                print("ERROR: ",e)
-                continue
+            	if not "PICO_NOT_FOUND" in str(e):
+                	print("ERROR in find units: ",e)
+            	continue
         return devices
 
     def getDeviceName(self,device):
@@ -128,7 +131,7 @@ class deviceShelf():
                 if i!=nbr:
                     self.log.msg("Close",i)
                     device.close()
-        self.log.info("The chosen device is called (type, batch, serial): %s"%vinfo)
+        self.log.warning("The chosen device is called (type, batch, serial): %s"%vinfo)
         return chosen_device
 
     def select_and_start_device(self, test):

@@ -46,17 +46,17 @@ class picoscope:
     # find the coupling in PS5000A_COUPLING, give api value in order of enum starting from 0
     CHANNEL_COUPLINGS = {"DC": 1, "AC": 0} # just save play to use dc instead of dc50 because the latter does not exist # TODO
     # find the following values in PS5000A_RANGE and give api value in order of enum starting from 1
-    CHANNEL_RANGE = [{"rangeV": 10E-3,  "apivalue": 1, "rangeStr": "10 mV"},
-                     {"rangeV": 20E-3,  "apivalue": 2, "rangeStr": "20 mV"},
-                     {"rangeV": 50E-3,  "apivalue": 3, "rangeStr": "50 mV"},
-                     {"rangeV": 100E-3, "apivalue": 4, "rangeStr": "100 mV"},
-                     {"rangeV": 200E-3, "apivalue": 5, "rangeStr": "200 mV"},
-                     {"rangeV": 500E-3, "apivalue": 6, "rangeStr": "500 mV"},
-                     {"rangeV": 1.0,    "apivalue": 7, "rangeStr": "1 V"},
-                     {"rangeV": 2.0,    "apivalue": 8, "rangeStr": "2 V"},
-                     {"rangeV": 5.0,    "apivalue": 9, "rangeStr": "5 V"},
-                     {"rangeV": 10.0,   "apivalue": 10, "rangeStr": "10 V"},
-                     {"rangeV": 20.0,   "apivalue": 11, "rangeStr": "20 V"},
+    CHANNEL_RANGE = [{"rangeV": 10E-3,  "apivalue": 0, "rangeStr": "10 mV"},
+                     {"rangeV": 20E-3,  "apivalue": 1, "rangeStr": "20 mV"},
+                     {"rangeV": 50E-3,  "apivalue": 2, "rangeStr": "50 mV"},
+                     {"rangeV": 100E-3, "apivalue": 3, "rangeStr": "100 mV"},
+                     {"rangeV": 200E-3, "apivalue": 4, "rangeStr": "200 mV"},
+                     {"rangeV": 500E-3, "apivalue": 5, "rangeStr": "500 mV"},
+                     {"rangeV": 1.0,    "apivalue": 6, "rangeStr": "1 V"},
+                     {"rangeV": 2.0,    "apivalue": 7, "rangeStr": "2 V"},
+                     {"rangeV": 5.0,    "apivalue": 8, "rangeStr": "5 V"},
+                     {"rangeV": 10.0,   "apivalue": 9, "rangeStr": "10 V"},
+                     {"rangeV": 20.0,   "apivalue": 10, "rangeStr": "20 V"},
                      ]
     # get from datasheet, copy full list from channel range
     # probably only a function which I need to give a suggestion
@@ -74,7 +74,7 @@ class picoscope:
                 }   
     MAXOFFSETAC=MAXOFFSETDC
     # TODO: no idea where I got that from
-    MINTRIGGER={20E-3:0,
+    MINTRIGGER={10E-3:0,
                 20E-3:1,
                 50E-3: 4, # V, mV
                 100E-3: 8,
@@ -447,7 +447,7 @@ class picoscope:
     def setSamplingFrequency(self, sampleFreq, noSamples, oversample=0, segmentIndex=0):
         sampleInterval = 1.0 / sampleFreq
         duration = noSamples * sampleInterval        
-        self.oversample = oversample
+        #self.oversample = oversample
         self.timebase = self.getTimeBaseNum(sampleInterval) # 2.0 fuer 1.0ns interval
         timebase_dt = self.getTimestepFromTimebase(self.timebase) # 8e-10 fuer 1.0ns interval
         noSamples = int(round(duration / timebase_dt))
@@ -456,7 +456,8 @@ class picoscope:
         sampleRate = c_float()
         m = self.lib.ps5000aGetTimebase2(c_int16(self.handle), c_uint32(self.timebase),
                                         c_uint32(noSamples), byref(sampleRate),
-                                        c_int16(oversample), byref(maxSamples),
+                                        #c_int16(oversample), # not available in 5xxx (as opposed to 3xxx)
+                                        byref(maxSamples),
                                         c_uint32(segmentIndex))
         self.checkResult(m) # 0 if all ok(m)
 
@@ -490,7 +491,8 @@ class picoscope:
         m = self.lib.ps5000aRunBlock(
             c_int16(self.handle), c_uint32(numPreTrigSamples),
             c_uint32(numPostTrigSamples), c_uint32(self.timebase),
-            c_int16(self.oversample), byref(timeIndisposedMs),
+            #c_int16(self.oversample), # removed because not available in 5xxx
+            byref(timeIndisposedMs),
             c_uint32(segmentIndex), 
             c_void_p(), # a pointer to the ps5000aBlockReady callback function that the driver will call when the data has been collected
             c_void_p() # a void pointer that is passed to the ps5000aBlockReady callback function.The callback can use this pointer to return arbitrary data to the application

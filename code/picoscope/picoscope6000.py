@@ -29,6 +29,7 @@ class picoscope:
     CHANNELS     = {"A": 0, "B": 1, "C": 2, "D": 3,
                     "External": 4, "MaxChannels": 4, "TriggerAux": 5}
     CHANNEL_COUPLINGS = {"DC": 1, "DC50": 2,  "AC": 0}
+    # values which are available for other but not this picoscope are not listed, but still counted in the api value, therefore it does not start with 0
     CHANNEL_RANGE = [{"rangeV": 50E-3,  "apivalue": 2, "rangeStr": "50 mV"},
                      {"rangeV": 100E-3, "apivalue": 3, "rangeStr": "100 mV"},
                      {"rangeV": 200E-3, "apivalue": 4, "rangeStr": "200 mV"},

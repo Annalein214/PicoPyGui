@@ -406,9 +406,9 @@ class daq(QThread):
                                                                                           self.settings.voltagerange[channel], 
                                                                                           VRange))
                 self.settings.voltagerange[channel]=VRange
-            self.out.info("Channel %s: Mode %s, Voltage %fV, Offset %fmV, Enabled %d" % (channel,
+            self.out.info("Channel %s: Mode %s, Voltage %.3fV, Offset %.1fmV, Enabled %d" % (channel,
                                                                         self.settings.coupling[channel],
-                                                                        self.settings.voltagerange[channel]/1000,
+                                                                        self.settings.voltagerange[channel],
                                                                         self.settings.offset[channel],
                                                                         int(self.settings.channelEnabled[channel]),
                                                                         ))
