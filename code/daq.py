@@ -44,7 +44,6 @@ class daq(QThread):
         self.out.info("\tSleep Time %fs"% self.sleeptime)
 
         self.log.info("Measurement log file in %s" % (self.out.filename))
-        self.log.info("Pretrigger Samples %.2f"% self.settings.nopretriggersamples)
 
         self.settings.saveMeasurement=False # reset to false so that the user can decide 
 
@@ -436,8 +435,9 @@ class daq(QThread):
                               "Voltage %fV, " % (self.settings.triggervoltage/1000) +\
                               "Mode %s, "% (self.settings.triggermode) +\
                               "Delay %f, "% (self.settings.triggerdelay) +\
-                              "Timeout %f, "% (self.settings.triggertimeout))
-                              
+                              "Timeout %f, "% (self.settings.triggertimeout) +\
+                             "Pretrigger Ratio %.2f"% self.settings.nopretriggersamples )
+^                              
         if not ok: return False
 
         try:
@@ -464,10 +464,11 @@ class daq(QThread):
     def setSampling(self):
         if self.opts.test: 
             self.interval=1./self.settings.samplefreq
-            self.out.info("Sampling Rate: %e Hz; Samples %e; MaxSamples %e; Interval %e ns"%(self.settings.samplefreq, 
+            self.out.info("Sampling Rate: %e Hz; Samples %e; MaxSamples %e; Interval %e ns; Pre-trigger %d"%(self.settings.samplefreq, 
                                                                     self.settings.nosamples, 
                                                                     0,
-                                                                    self.interval*1e9))
+                                                                    self.interval*1e9, 
+                                                                    int(self.settings.nopretriggersamples * self.settings.nosamples)))
 
             return
         samplingRate, maxSamples, samples = self.scope.setSamplingFrequency(self.settings.samplefreq, self.settings.nosamples) # sample frequency, number of samples
