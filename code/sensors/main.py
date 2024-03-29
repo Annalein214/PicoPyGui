@@ -55,38 +55,58 @@ class external(QThread):
         self.prepareAnalysis()
 
         self.out.debug("HW measurement started "+str(self._threadIsStopped))
+
+        # check which devices should be used and don't allow switch on/off during measurement:
+        useDummy=False
+        useLightsensor=False
+        useRoomTemp = False
+        useTempSensors=False
+        useHV = False
+        if self.dummy != None and self.settings.useDummy != False:
+            useDummy=True
+        if self.lightsensor!=None and self.settings.useLightsensor != False:
+            useLightsensor=True
+        if self.roomtemp!=None and self.settings.useRoomtemp!=False:
+            useRoomTemp = True
+        if self.temperaturesensors!=None and self.settings.useTemp!=False:
+            useTempSensors=True
+        if self.hv!=None and self.settings.useHV != False:
+            useHV=True
         
+
+
         while not self._threadIsStopped:
             self.startBlock=time.time()
 
             
             # -- HWT: get HW output here
             # use try to keep the thread running in case of a readout error
-            if self.dummy!=None: # cannot use "useDummy" here because that might be changed during run by the user in display tab
+            if useDummy: 
+                # cannot use "useDummy" here because that might be changed during run by the user in display tab and this contaminates data integrity
                 val=self.dummy.readDevice()
                 self.dummyVals.append(val)
-            if self.lightsensor!=None: #
+            if useLightsensor: #
                 try:
                     val=self.lightsensor.readDevice()
                     self.lightVals.append(val)
                 except Exception as e:
                     self.log.error("ERROR in Lightsensor reading: %s"%(str(e)))
                     self.lightVals.append(-1)
-            if self.roomtemp!=None: #
+            if useRoomTemp: #
                 try:
                     val=self.roomtemp.readTemperature()
                     self.roomVals.append(val)
                 except Exception as e:
                     self.log.error("ERROR in Roomtemp sensor reading: %s"%(str(e)))
                     self.roomVals.append(-1)
-            if self.temperaturesensors!=None: #
+            if useTempSensors: #
                 try:
                     val=self.temperaturesensors.readDevice()
                     self.tempVals.append(val)
                 except Exception as e:
                     self.log.error("ERROR in Temperature reading: %s"%(str(e)))
                     self.tempVals.append((-999, -999, -999, -999))
-            if self.hv!=None:
+            if useHV:
                 try:               
                     val=self.hv.readDevice()
                     self.hvVals.append(val)
@@ -140,15 +160,15 @@ class external(QThread):
         HWT save all values here
         '''
 
-        if self.dummy!=None:
+        if self.dummy!=None and self.settings.useDummy!=False: # added useDummy, because dummy is otherwise always on!
             self.save("HW_Dummy", self.dummyVals)
-        if self.lightsensor!=None:
+        if self.lightsensor!=None and self.settings.useLightsensor != False:
             self.save("HW_Lightsensor", self.lightVals)
-        if self.roomtemp!=None:
+        if self.roomtemp!=None and self.settings.useRoomtemp!=False:
             self.save("HW_Roomtemp", self.roomVals)
-        if self.hv!=None:
+        if self.hv!=None and self.settings.useHV != False:
             self.save("HW_HV", self.hvVals)
-        if self.temperaturesensors!=None:
+        if self.temperaturesensors!=None and self.settings.useTemp!=False:
             self.save("HW_Temperature", self.tempVals)
         # Update settings
         self.rounds+=1
@@ -185,7 +205,7 @@ class external(QThread):
         # always initialize here even if user switches off later
 
         try:
-            self.dummy = Sensor(self.log)
+            self.dummy = Sensor(self.log) # this should always work, so this data is always taken
         except:
             self.log.error("Cannot load hardware Dummy. Switch off.")
             self.settings.useDummy=False
