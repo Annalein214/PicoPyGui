@@ -437,7 +437,7 @@ class daq(QThread):
                               "Delay %f, "% (self.settings.triggerdelay) +\
                               "Timeout %f, "% (self.settings.triggertimeout) +\
                              "Pretrigger Ratio %.2f"% self.settings.nopretriggersamples )
-^                              
+                              
         if not ok: return False
 
         try:
