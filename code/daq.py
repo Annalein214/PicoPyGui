@@ -347,7 +347,7 @@ class daq(QThread):
                     self.save(channel+"_"+"fft",self.fft[channel])
         
         # TODO: check if needed
-        self.save("IndisposedTimes", self.indisposedTimes)
+        #self.save("IndisposedTimes", self.indisposedTimes)
 
         # save always
         self.save("Triggerrate", self.rate)
