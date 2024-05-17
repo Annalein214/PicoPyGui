@@ -193,11 +193,16 @@ class plotWidget(FigureCanvas):
 
         if str_ch_mode != "None":
 
+            #print(str_ch_mode)
+
             if ":" in  str_ch_mode:
                 channel=str_ch_mode.split(":")[0]
                 mode=str_ch_mode.split(":")[1]
             else:
                 channel=""
+                mode=""
+
+            #print(channel, mode)
 
             if "Triggerrate" in str_ch_mode:
                 value = "%.2e" % self.daq.rate[-1]
@@ -220,12 +225,16 @@ class plotWidget(FigureCanvas):
                 value = "%.2e" % self.hw.lightVals[-1]
                 title = "Lightsensor"
                 yUnit = "V"
-            elif "Roomtemp" in mode:
-                if len(self.hw.roomVals)>0:
-                    value = "%.1f" % self.hw.roomVals[-1]
+            elif "Humidity" in mode:
+                value = "%.2e" % self.hw.humVals[-1]
+                title = "Humidity"
+                yUnit = "%"
+            elif "HumTemp" in mode:
+                if len(self.hw.humTempVals)>0:
+                    value = "%.1f" % self.hw.humTempVals[-1]
                 else:
                     value=np.nan
-                title = "Roomtemp"
+                title = "HumTemp"
                 yUnit = "°C"
             elif "HV" in mode:
                 value = "%.2e" % self.hw.hvVals[-1][1]
@@ -236,7 +245,7 @@ class plotWidget(FigureCanvas):
                     values = self.hw.tempVals[-1]
                 else:
                     values=[np.nan, np.nan, np.nan]
-                title = "Temps:"
+                title = "Temps"
                 yUnit = "°C"
                 value = ""
                 for v in values:
@@ -279,7 +288,7 @@ class plotWidget(FigureCanvas):
                 channel=""
                 mode=time_ch_mode
 
-            #print(time_ch_mode, channel, mode)
+            print(time_ch_mode, channel, mode)
 
             if "Triggerrate" in time_ch_mode:
                 values = self.daq.rate
@@ -307,9 +316,14 @@ class plotWidget(FigureCanvas):
                 title = "Lightsensor"
                 yUnit = "V"
                 yLabel="Value"
-            elif "Roomtemp" in mode:
-                values = self.hw.roomVals
-                title = "Roomtemp"
+            elif "Humidity" in mode:
+                values = self.hw.humVals
+                title = "Humidity"
+                yUnit = "%"
+                yLabel="Percentage"
+            elif "HumTemp" in mode:
+                values = self.hw.humTempVals
+                title = "HumTemp"
                 yUnit = "°C"
                 yLabel="Temperature"
             elif "HV" in mode:

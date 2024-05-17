@@ -135,8 +135,10 @@ class hourlyPlot:
                     # HWT add your unit here
                     if "Lightsensor" in mode:
                         yUnit="V"
-                    elif "Roomtemp" in mode:
+                    elif "HumTemp" in mode:
                         yUnit="°C"
+                    elif "Humidity" in mode:
+                        yUnit="%"
                     elif "HV" in mode:
                         yUnit="V"
                         data=data[:,1]
@@ -356,8 +358,10 @@ class hourlyPlot:
             # HWT add your unit here and maybe the data
             if "Lightsensor" in mode:
                 yUnit="V"
-            elif "Roomtemp" in mode:
+            elif "HumTemp" in mode:
                 yUnit="°C"
+            elif "Humidity" in mode:
+                yUnit="%"
             elif "HV" in mode:
                 yUnit="V"
                 data=data[:,1]

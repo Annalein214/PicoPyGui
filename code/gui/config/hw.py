@@ -41,16 +41,22 @@ class hardwareConfigWidget(MyGui.QWidget):
                             self.updateHW)
 
         # --- Temperature sensor next to light diode ----
-        self.chooseRoomtemp=createCheckbox("Roomtemp", # don't change name, it is processed elsewhere
-                            self.settings.useRoomtemp,
+        self.chooseHumtemp=createCheckbox("Humidity Temperature", # don't change name, it is processed elsewhere
+                            self.settings.useTempHum,
                             self.updateHW)
 
         # --- Temperature sensors ----
-        self.chooseTemp=createCheckbox("Temperature", # don't change name, it is processed elsewhere
-                            self.settings.useTemp,
+        self.chooseTempArray=createCheckbox("Temperatures", # don't change name, it is processed elsewhere
+                            self.settings.useTempArray,
                             self.updateHW)
+        
+        # --- Humidity sensor ----
+        self.chooseHumidity=createCheckbox("Humidity", # don't change name, it is processed elsewhere
+                            self.settings.useHumidity,
+                            self.updateHW)
+        
         # --- HV ----
-        self.chooseHV=createCheckbox("HV", # don't change name, it is processed elsewhere
+        self.chooseHV=createCheckbox("High Voltage Readout", # don't change name, it is processed elsewhere
                             self.settings.useHV,
                             self.updateHW)
 
@@ -69,11 +75,13 @@ class hardwareConfigWidget(MyGui.QWidget):
         # HWT add your widgets to the grid
         grid.addWidget(self.chooseDummy,       c,1)
         c+=1
-        grid.addWidget(self.chooseTemp,       c,1)
+        grid.addWidget(self.chooseTempArray,       c,1)
         c+=1
-        grid.addWidget(self.chooseRoomtemp,       c,1)
+        grid.addWidget(self.chooseHumtemp,       c,1)
         c+=1
         grid.addWidget(self.chooseLight,       c,1)
+        c+=1
+        grid.addWidget(self.chooseHumidity,       c,1)
         c+=1
         grid.addWidget(self.chooseHV,       c,1)
 
@@ -105,8 +113,9 @@ class hardwareConfigWidget(MyGui.QWidget):
         # HWT handle user choice here, also handle the impact on possible choices in the display tab
         self.simpleChoice(self.settings.useDummy, "Dummy", self.chooseDummy, "useDummy", self.hw.dummy)         
         self.simpleChoice(self.settings.useLightsensor, "Lightsensor", self.chooseLight, "useLightsensor",self.hw.lightsensor)
-        self.simpleChoice(self.settings.useRoomtemp, "Roomtemp", self.chooseRoomtemp, "useRoomtemp",self.hw.roomtemp)
-        self.simpleChoice(self.settings.useTemp, "Temperature", self.chooseTemp, "useTemp",self.hw.temperaturesensors)        
+        self.simpleChoice(self.settings.useTempHum, "HumTemp", self.chooseHumtemp, "useTempHum",self.hw.humtemp)
+        self.simpleChoice(self.settings.useHumidity, "Humidity", self.chooseHumtemp, "useHumidity",self.hw.humidity)
+        self.simpleChoice(self.settings.useTempArray, "TemperatureArray", self.chooseTempArray, "useTempArray",self.hw.temperaturearray)        
         self.simpleChoice(self.settings.useHV, "HV", self.chooseHV, "useHV",self.hw.hv)        
         #print("....")
 

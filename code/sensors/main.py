@@ -4,11 +4,11 @@ from code.log import log
 from code.helpers import timestring_humanReadable
 import time, os
 
-# import hardware scripts
+# import hardware scripts # HWT
 from code.sensors.dummy import Sensor
-from code.sensors.lightsensor.photodiode import Photodiode
 from code.sensors.hv.Caen import HV
-from code.sensors.temperature.temperaturesensors import TempSensors
+from code.sensors.environmental_sensors.environmental_sensors import EnvSensors
+
 
 class external(QThread):
 
@@ -59,16 +59,19 @@ class external(QThread):
         # check which devices should be used and don't allow switch on/off during measurement:
         useDummy=False
         useLightsensor=False
-        useRoomTemp = False
+        useTempHum = False
         useTempSensors=False
+        useHumidity=False
         useHV = False
         if self.dummy != None and self.settings.useDummy != False:
             useDummy=True
         if self.lightsensor!=None and self.settings.useLightsensor != False:
             useLightsensor=True
-        if self.roomtemp!=None and self.settings.useRoomtemp!=False:
-            useRoomTemp = True
-        if self.temperaturesensors!=None and self.settings.useTemp!=False:
+        if self.humidity!=None and self.settings.useHumidity != False:
+            useHumidity=True
+        if self.humtemp!=None and self.settings.useTempHum!=False:
+            useTempHum = True
+        if self.temperaturearray!=None and self.settings.useTempArray!=False:
             useTempSensors=True
         if self.hv!=None and self.settings.useHV != False:
             useHV=True
@@ -87,21 +90,25 @@ class external(QThread):
                 self.dummyVals.append(val)
             if useLightsensor: #
                 try:
-                    val=self.lightsensor.readDevice()
+                    val=self.lightsensor.readDiode()
                     self.lightVals.append(val)
                 except Exception as e:
                     self.log.error("ERROR in Lightsensor reading: %s"%(str(e)))
                     self.lightVals.append(-1)
-            if useRoomTemp: #
+            if useTempHum or useHumidity: #
                 try:
-                    val=self.roomtemp.readTemperature()
-                    self.roomVals.append(val)
+                    val=self.humtemp.readHumidity()
+                    if useTempHum:
+                        self.humTempVals.append(val[1])
+                    if useHumidity:
+                        self.humVals.append(val[0])
                 except Exception as e:
-                    self.log.error("ERROR in Roomtemp sensor reading: %s"%(str(e)))
-                    self.roomVals.append(-1)
+                    self.log.error("ERROR in Humidity sensor reading: %s"%(str(e)))
+                    self.humTempVals.append(-111)
+                    self.humVals.append(-1)
             if useTempSensors: #
                 try:
-                    val=self.temperaturesensors.readDevice()
+                    val=self.temperaturearray.readTemperature()
                     self.tempVals.append(val)
                 except Exception as e:
                     self.log.error("ERROR in Temperature reading: %s"%(str(e)))
@@ -134,7 +141,8 @@ class external(QThread):
         '''
         self.dummyVals = []
         self.lightVals = []
-        self.roomVals =[]
+        self.humTempVals =[]
+        self.humVals = []
         self.hvVals = []
         self.tempVals = []
         self.time=[]
@@ -164,11 +172,13 @@ class external(QThread):
             self.save("HW_Dummy", self.dummyVals)
         if self.lightsensor!=None and self.settings.useLightsensor != False:
             self.save("HW_Lightsensor", self.lightVals)
-        if self.roomtemp!=None and self.settings.useRoomtemp!=False:
-            self.save("HW_Roomtemp", self.roomVals)
+        if self.humtemp!=None and self.settings.useTempHum!=False:
+            self.save("HW_HumTemp", self.humTempVals)
         if self.hv!=None and self.settings.useHV != False:
             self.save("HW_HV", self.hvVals)
-        if self.temperaturesensors!=None and self.settings.useTemp!=False:
+        if self.humidity!=None and self.settings.useHumidity!=False:
+            self.save("HW_Humidity", self.tempVals)
+        if self.temperaturearray!=None and self.settings.useTempArray!=False:
             self.save("HW_Temperature", self.tempVals)
         # Update settings
         self.rounds+=1
@@ -213,20 +223,31 @@ class external(QThread):
 
 
         try:
-            self.lightsensor = Photodiode(self.log)
-            self.roomtemp = self.lightsensor
+            self.lightsensor = EnvSensors(self.log)
+            self.humtemp = self.lightsensor
+            self.humidity = self.lightsensor
+            self.temperaturearray = self.lightsensor
             if self.lightsensor.online==False:
                 self.settings.useLightsensor=False
-                self.settings.useRoomtemp = False
+                self.settings.useTempHum = False
+                self.settings.useHumidity = False
+                self.settings.useTempArray = False
                 self.lightsensor=None
-                self.roomtemp=None
-                self.log.error("Photodiode and Roomtemperature not online. Switch off.")
+                self.temphum=None
+                self.humidity=None
+                self.temperaturearray=None
+
+                self.log.error("Photodiode and Temperatures and Humidity not online. Switch off.")
         except:
-            self.log.error("Cannot load hardware Photodiode and Roomtemperature. Switch off.")
+            self.log.error("Cannot load hardware Photodiode, Humidity, Temperatures. Switch off.")
             self.settings.useLightsensor=False
+            self.settings.useTempHum = False
+            self.settings.useHumidity = False
+            self.settings.useTempArray = False
             self.lightsensor=None
-            self.settings.useRoomtemp = False
-            self.roomtemp=None
+            self.temphum=None
+            self.humidity=None
+            self.temperaturearray=None
 
         try:
             self.hv = HV(self.log)
@@ -234,20 +255,9 @@ class external(QThread):
                 self.settings.useHV=False
                 self.hv=None
         except:
-            self.log.error("Cannot load hardware Photodiode. Switch off.")
+            self.log.error("Cannot load hardware HV. Switch off.")
             self.settings.useHV=False
             self.hv=None
-
-        try:
-            self.temperaturesensors = TempSensors(self.log)
-            if self.temperaturesensors.online==False:
-                self.settings.useTemp=False
-                self.temperaturesensors=None
-                self.log.error("Temperature sensor offline. Switch off.")
-        except:
-            self.log.error("Cannot load hardware Temperature. Switch off.")
-            self.settings.useTemp=False
-            self.temperaturesensors=None
         
 
     def setDefault(self):
@@ -261,8 +271,9 @@ class external(QThread):
         self.dummy=None
         self.lightsensor=None
         self.hv=None
-        self.temperaturesensors=None
-        self.roomtemp=None
+        self.temphum=None
+        self.humidity=None
+        self.temperaturearray=None
         
     def close(self):
         self.dummy.close()
@@ -270,19 +281,23 @@ class external(QThread):
 
         if not self.opts.test:
             # HWT close your stuff here
-            if self.lightsensor!=None or self.roomtemp != None:
+            if self.lightsensor!=None or self.temphum != None or \
+                self.humidity != None or self.temperaturearray != None:
                 try: self.lightsensor.close()
                 except: pass
-                try: self.roomtemp.close()
+                try: self.humtemp.close()
+                except: pass
+                try: self.humidity.close()
+                except: pass
+                try: self.temperaturearray.close()
                 except: pass
                 self.lightsensor=None
-                self.roomtemp=None
+                self.temphum=None
+                self.humidity=None
+                self.temperaturearray=None
             if self.hv!=None:
                 self.hv.close()
                 self.hv=None
-            if self.temperaturesensors!=None:
-                self.temperaturesensors.close()
-                self.temperaturesensors=None
 
         self.log.info("Hardware closed. Good night!")
 

@@ -295,12 +295,14 @@ class displayConfigWidget(MyGui.QWidget):
             options.append("HW:Dummy")
         if self.settings.useLightsensor and self.hw.lightsensor!=None: 
             options.append("HW:Lightsensor")
-        if self.settings.useRoomtemp and self.hw.roomtemp!=None: 
-            options.append("HW:Roomtemp")
+        if self.settings.useTempHum and self.hw.humtemp!=None: 
+            options.append("HW:HumTemp")
+        if self.settings.useHumidity and self.hw.humtemp!=None: 
+            options.append("HW:Humidity")
         if self.settings.useHV and self.hw.hv!=None: 
             options.append("HW:HV")
-        if self.settings.useTemp and self.hw.temperaturesensors!=None: 
-            options.append("HW:Temperature")
+        if self.settings.useTempArray and self.hw.temperaturearray!=None: 
+            options.append("HW:Temperatures")
         return options
 
     def getStrOptions(self):
@@ -317,10 +319,12 @@ class displayConfigWidget(MyGui.QWidget):
             options.append("HW:Dummy")
         if self.settings.useLightsensor and self.hw.lightsensor!=None: 
             options.append("HW:Lightsensor")
-        if self.settings.useRoomtemp and self.hw.roomtemp!=None: 
-            options.append("HW:Roomtemp")
+        if self.settings.useTempHum and self.hw.humtemp!=None: 
+            options.append("HW:HumTemp")
+        if self.settings.useHumidity and self.hw.humtemp!=None: 
+            options.append("HW:Humidity")
         if self.settings.useHV and self.hw.hv!=None: 
             options.append("HW:HV")
-        if self.settings.useTemp and self.hw.temperaturesensors!=None: 
-            options.append("HW:Temperature")
+        if self.settings.useTempArray and self.hw.temperaturearray!=None: 
+            options.append("HW:Temperatures")
         return options

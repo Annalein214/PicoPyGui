@@ -76,10 +76,10 @@ Most of the options from the GUI are not available, for the rest refer to that p
 
 # How to add external hardware 
 
-In order to measure with external sensors, apart from the picoscope, within the same program and display the results on the same time axis, you need to provide a script which outputs the values once executed. 
+In order to measure with external sensors, apart from the picoscope, within the same program and display the results on the same time axis, you need to provide a script which returns the values once executed. 
 Search in the code for the string "HWT" to find all locations where you need to add special code in order to add your external sensors.
 List of what to do:
-* script reading out the sensor in code/sensors
+* script reading out the sensor in code/sensors, returning the values
 * in settings.cfg add a variable with name useSENSORNAME and add a bool 
 * add user choice for this variable in code/gui/config/hw.py 
 * add choice in code/config/display.py for time and str wise display (need to change much more code if you want to see waveform or histogram)
