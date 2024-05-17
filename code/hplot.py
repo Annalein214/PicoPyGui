@@ -27,7 +27,9 @@ class hourlyPlot:
             hrtime=dyrs[-1] # starttime human readable
             self.directory="./data/"+hrtime
             self.outfile="./data/"+hrtime+"/"+hrtime+".out"
-            #print("Directory",self.directory)
+            print("Search in directory",self.directory)
+            # here problems happen if you have a directory which lists first 
+            # in this kind of sorting because it comes after 2024*
             
             # get round from file name of a file which always exists
             tfyles=sorted(glob(self.directory+"/Time_*.npy"))
