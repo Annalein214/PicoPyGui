@@ -288,7 +288,7 @@ class plotWidget(FigureCanvas):
                 channel=""
                 mode=time_ch_mode
 
-            print(time_ch_mode, channel, mode)
+            #print(time_ch_mode, channel, mode)
 
             if "Triggerrate" in time_ch_mode:
                 values = self.daq.rate
