@@ -248,6 +248,7 @@ class external(QThread):
             self.temphum=None
             self.humidity=None
             self.temperaturearray=None
+            self.humtemp=None
 
         try:
             self.hv = HV(self.log)

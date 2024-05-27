@@ -205,28 +205,46 @@ class plotWidget(FigureCanvas):
             #print(channel, mode)
 
             if "Triggerrate" in str_ch_mode:
-                value = "%.2e" % self.daq.rate[-1]
+            	if len(self.daq.rate)>0:
+                   value = "%.2e" % self.daq.rate[-1]
+                else:
+                   value= "00"
                 title = "Triggerrate"
                 yUnit = "Hz"
             elif "Std" in mode:
-                value = "%.2e" % self.daq.std[channel][-1]
+            	if len(self.daq.std[channel][-1])>0:
+                   value = "%.2e" % self.daq.std[channel][-1]
+                else:
+                   value= "00"
                 title = "Std. Dev. Ch. %s" % channel
                 yUnit = "V"
             elif "Average" in mode:
-                value = "%.2e" % self.daq.avg[channel][-1]
+            	if self.daq.avg[channel][-1]>0:
+                   value = "%.2e" % self.daq.avg[channel][-1]
+                else:
+                    value=np.nan
                 title = "Average Ch. %s" % channel
                 yUnit = "V"
             # HWT add custom instructions for hardware
             elif "Dummy" in mode:
-                value = "%.2e" % self.hw.dummyVals[-1]
+            	if self.hw.dummyVals[-1]>0:
+                   value = "%.2e" % self.hw.dummyVals[-1]
+                else:
+                    value=np.nan
                 title = "Ext. Dummy"
                 yUnit = "V"
             elif "Lightsensor" in mode:
-                value = "%.2e" % self.hw.lightVals[-1]
+                if self.hw.dummyVals[-1]>0:
+                   value = "%.2e" % self.hw.lightVals[-1]
+                else:
+                    value=np.nan
                 title = "Lightsensor"
                 yUnit = "V"
             elif "Humidity" in mode:
-                value = "%.2e" % self.hw.humVals[-1]
+                if self.hw.humVals[-1]>0:
+                   value = "%.2e" % self.hw.humVals[-1]
+                else:
+                    value=np.nan
                 title = "Humidity"
                 yUnit = "%"
             elif "HumTemp" in mode:
@@ -237,7 +255,10 @@ class plotWidget(FigureCanvas):
                 title = "HumTemp"
                 yUnit = "°C"
             elif "HV" in mode:
-                value = "%.2e" % self.hw.hvVals[-1][1]
+            	if self.hw.hvVals[-1]>0:
+                   value = "%.2e" % self.hw.hvVals[-1][1]
+                else:
+                    value=np.nan
                 title = "HV"
                 yUnit = "V"
             elif "Temperature" in mode:
