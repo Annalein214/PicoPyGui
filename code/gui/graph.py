@@ -205,30 +205,30 @@ class plotWidget(FigureCanvas):
             #print(channel, mode)
 
             if "Triggerrate" in str_ch_mode:
-            	if len(self.daq.rate)>0:
-                   value = "%.2e" % self.daq.rate[-1]
+                if len(self.daq.rate)>0:
+                    value = "%.2e" % self.daq.rate[-1]
                 else:
-                   value= "00"
+                    value= "00"
                 title = "Triggerrate"
                 yUnit = "Hz"
             elif "Std" in mode:
-            	if len(self.daq.std[channel][-1])>0:
-                   value = "%.2e" % self.daq.std[channel][-1]
+                if len(self.daq.std[channel][-1])>0:
+                    value = "%.2e" % self.daq.std[channel][-1]
                 else:
-                   value= "00"
+                    value= "00"
                 title = "Std. Dev. Ch. %s" % channel
                 yUnit = "V"
             elif "Average" in mode:
-            	if self.daq.avg[channel][-1]>0:
-                   value = "%.2e" % self.daq.avg[channel][-1]
+                if self.daq.avg[channel][-1]>0:
+                    value = "%.2e" % self.daq.avg[channel][-1]
                 else:
                     value=np.nan
                 title = "Average Ch. %s" % channel
                 yUnit = "V"
             # HWT add custom instructions for hardware
             elif "Dummy" in mode:
-            	if self.hw.dummyVals[-1]>0:
-                   value = "%.2e" % self.hw.dummyVals[-1]
+                if self.hw.dummyVals[-1]>0:
+                    value = "%.2e" % self.hw.dummyVals[-1]
                 else:
                     value=np.nan
                 title = "Ext. Dummy"
@@ -255,8 +255,8 @@ class plotWidget(FigureCanvas):
                 title = "HumTemp"
                 yUnit = "°C"
             elif "HV" in mode:
-            	if self.hw.hvVals[-1]>0:
-                   value = "%.2e" % self.hw.hvVals[-1][1]
+                if self.hw.hvVals[-1]>0:
+                    value = "%.2e" % self.hw.hvVals[-1][1]
                 else:
                     value=np.nan
                 title = "HV"
