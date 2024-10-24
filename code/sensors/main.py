@@ -177,7 +177,7 @@ class external(QThread):
         if self.hv!=None and self.settings.useHV != False:
             self.save("HW_HV", self.hvVals)
         if self.humidity!=None and self.settings.useHumidity!=False:
-            self.save("HW_Humidity", self.tempVals)
+            self.save("HW_Humidity", self.humVals)
         if self.temperaturearray!=None and self.settings.useTempArray!=False:
             self.save("HW_Temperature", self.tempVals)
         # Update settings
