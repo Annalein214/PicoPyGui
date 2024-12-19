@@ -234,7 +234,7 @@ class plotWidget(FigureCanvas):
                 title = "Ext. Dummy"
                 yUnit = "V"
             elif "Lightsensor" in mode:
-                if self.hw.dummyVals[-1]>0:
+                if self.hw.lightVals[-1]>0:
                    value = "%.2e" % self.hw.lightVals[-1]
                 else:
                     value=np.nan
