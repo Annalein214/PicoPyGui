@@ -376,7 +376,7 @@ class plotWidget(FigureCanvas):
                 time=(np.array(self.daq.time) - self.daq.startthread) / 60 # from unix time to minutes since measurement started
 
             # strange mismatch of len(time) and len(values) only happens few times
-            # handle it like this for now, but need to investigate - TOD()
+            # handle it like this for now, but need to investigate - TODO
             if len(time)!=len(values) and abs(len(time)-len(values))<2 and not "Temperature" in mode:
                 #self.log.warning("Lengths of arrays do not match! %s %s %d %d"%( channel, mode, len(time), len(values)))
                 time=list(time)

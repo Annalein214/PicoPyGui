@@ -44,6 +44,7 @@ class daq(QThread):
         self.out.info("\tSleep Time %fs"% self.sleeptime)
 
         self.log.info("Measurement log file in %s" % (self.out.filename))
+        self.log.outfile=self.out.filename # save the name of the logfile in the main log class
 
         self.settings.saveMeasurement=False # reset to false so that the user can decide 
 

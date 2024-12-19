@@ -12,6 +12,8 @@ class log:
             self.filename=self.directory+"/"+self.formatTimeforLog(t)+"."+end            
             print (yellow+"Log messages will be saved to "+nc, self.filename)
 
+        self.outfile=None
+
     def formatTimeforLog(self, t): # input given by time.time()
         s=time.localtime(float(t))
         return "%4d_%02d_%02d_%02d_%02d_%02d" % (s.tm_year,s.tm_mon,s.tm_mday,s.tm_hour,s.tm_min,s.tm_sec)

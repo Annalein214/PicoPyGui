@@ -23,10 +23,18 @@ class hourlyPlot:
         self.log.debug("HourlyPlot: plotAll")
 
         try:# wrap so that this does not disturb normal operation
-            dyrs=sorted(os.listdir("./data/"))
-            hrtime=dyrs[-1] # starttime human readable
-            self.directory="./data/"+hrtime
-            self.outfile="./data/"+hrtime+"/"+hrtime+".out"
+
+            outfile=self.log.outfile
+            if outfile==None:
+                self.log.error("Outfile is None")
+                return False
+            self.outfile=outfile
+
+            # get the latest directory
+            dyr="/".join(outfile.split("/")[:-1])
+            print("HPLOT dyr",dyr)
+            self.directory=dyr
+
             print("Search in directory",self.directory)
             # here problems happen if you have a directory which lists first 
             # in this kind of sorting because it comes after 2024*
@@ -34,7 +42,7 @@ class hourlyPlot:
             # get round from file name of a file which always exists
             tfyles=sorted(glob(self.directory+"/Time_*.npy"))
             if len(tfyles)==0:
-                self.log.error("No files found for plotting")
+                self.log.error("No files found")
                 return False
             runde = int(tfyles[-1].split("/")[-1].split(".")[0].split("_")[-1])
             #print("hourlyPlot, runde", runde)
