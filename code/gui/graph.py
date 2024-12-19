@@ -227,42 +227,42 @@ class plotWidget(FigureCanvas):
                 yUnit = "V"
             # HWT add custom instructions for hardware
             elif "Dummy" in mode:
-                if self.hw.dummyVals[-1]>0:
+                if len(self.hw.dummyVals)>0 and self.hw.dummyVals[-1]>0:
                     value = "%.2e" % self.hw.dummyVals[-1]
                 else:
                     value=np.nan
                 title = "Ext. Dummy"
                 yUnit = "V"
             elif "Lightsensor" in mode:
-                if self.hw.lightVals[-1]>0:
+                if len(self.hw.lightVals)>0 and self.hw.lightVals[-1]>0:
                    value = "%.2e" % self.hw.lightVals[-1]
                 else:
                     value=np.nan
                 title = "Lightsensor"
                 yUnit = "V"
             elif "Humidity" in mode:
-                if self.hw.humVals[-1]>0:
+                if len(self.hw.humVals)>0 and self.hw.humVals[-1]>0:
                    value = "%.2e" % self.hw.humVals[-1]
                 else:
                     value=np.nan
                 title = "Humidity"
                 yUnit = "%"
             elif "HumTemp" in mode:
-                if len(self.hw.humTempVals)>0:
+                if len(self.hw.humTempVals)>0 and len(self.hw.humTempVals)>0:
                     value = "%.1f" % self.hw.humTempVals[-1]
                 else:
                     value=np.nan
                 title = "HumTemp"
                 yUnit = "°C"
             elif "HV" in mode:
-                if self.hw.hvVals[-1]>0:
+                if len(self.hw.hvVals)>0 and self.hw.hvVals[-1]>0:
                     value = "%.2e" % self.hw.hvVals[-1][1]
                 else:
                     value=np.nan
                 title = "HV"
                 yUnit = "V"
             elif "Temperature" in mode:
-                if len(self.hw.tempVals)>0:
+                if len(self.hw.tempVals)>0 and len(self.hw.tempVals)>0:
                     values = self.hw.tempVals[-1]
                 else:
                     values=[np.nan, np.nan, np.nan]
