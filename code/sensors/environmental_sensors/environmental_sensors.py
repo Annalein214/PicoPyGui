@@ -46,7 +46,16 @@ class EnvSensors:
         string = str(raw, 'utf-8').strip()
 
         if not "Humidity" in str(string):
-            raise RuntimeError(TAG+": Value not from Humidity sensor: %s" % raw)
+            self.log.error(TAG+": Value not from Humidity sensor: %s" % raw)
+
+            # retry because info might come from an old request
+            raw = self.device.readline()
+            if debug: print(12,raw)        
+            string = str(raw, 'utf-8').strip()
+
+            if not "Temperatures" in str(string):
+                raise RuntimeError(TAG+": Value not from Humidity sensors: %s" % raw)
+
         devices=string.split(";")
         humidity=float(devices[0].split(" ")[-1])
         if debug: print("Humidity", humidity)
@@ -69,7 +78,16 @@ class EnvSensors:
         string = str(raw, 'utf-8').strip()
 
         if not "Diode" in str(string):
-            raise RuntimeError(TAG+": Value not from Diode sensor: %s" % raw)
+            self.log.error(TAG+": Value not from Diode sensor: %s" % raw)
+
+            # retry because info might come from an old request
+            raw = self.device.readline()
+            if debug: print(10,raw)        
+            string = str(raw, 'utf-8').strip()
+
+            if not "Diode" in str(string):
+                raise RuntimeError(TAG+": Value not from Diode sensors: %s" % raw)
+
         devices=string.split(" ")
         diode=float(string.split(" ")[-1])
         if debug: print("Diode", diode)
@@ -93,7 +111,17 @@ class EnvSensors:
         string = str(raw, 'utf-8').strip()
 
         if not "Temperatures" in str(string):
-            raise RuntimeError(TAG+": Value not from Temperature sensors: %s" % raw)
+            self.log.error(TAG+": Value not from Temperature sensors: %s" % raw)
+
+            # retry because info might come from an old request
+            raw = self.device.readline()
+            if debug: print(11,raw, test)        
+            string = str(raw, 'utf-8').strip()
+
+            if not "Temperatures" in str(string):
+                raise RuntimeError(TAG+": Value not from Temperature sensors: %s" % raw)
+
+
         # Temperatures: 283023E70D00009A 26.37; 28E1F2E70D0000FA 25.69; 
         #               285140E70D000031 25.94; 2817AFE60D0000CC 26.19; 
 
