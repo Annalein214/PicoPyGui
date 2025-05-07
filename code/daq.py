@@ -197,6 +197,7 @@ class daq(QThread):
         self.std={}
         self.xfreq=[]
         self.fft={}
+        self.pulses={}
         self.indisposedTimes=[] # save the values returned by runBlock, whatever they are
         self.measurementtime=0
         self.rate=[]
@@ -212,6 +213,7 @@ class daq(QThread):
             self.avg[channel]=[]
             self.std[channel]=[]
             self.fft[channel]=[]
+            self.pulses[channel]=[]
 
     def analysis(self,data):
 
@@ -240,6 +242,9 @@ class daq(QThread):
                 if self.settings.save_fft[channel]:
                     arrai=self.calcFft(data[i], channel)
                     self.fft[channel].append(arrai)
+                if channel=="A": # force identification of pulses
+                    arrai= self.calcPulses(data[i])
+                    self.pulses[channel].append(arrai)
 
         rate = self.settings.captures/self.measurementtime*1.e9
         #print("Rate", rate, self.settings.captures, self.settings.captures/self.measurementtime)
@@ -249,6 +254,39 @@ class daq(QThread):
 
         self.data_updated.emit() # you could also send data here
        
+    def calcPulses(self, dataX):
+        '''
+        calculate the number of pulses in the waveform
+        - go through every waveform in the capture
+        - find zero crossings (in reference to a trigger value)
+        - find the minimum in between the zero crossings
+        '''
+
+        #Set Trigger
+        trigger = 0.002 # needs to be the opposite sign of the real trigger value
+
+        #create lists 
+        peak_loc=[] 
+        peak_amp=[]
+        peak_loc_sub=np.zeros(30)*np.NaN # in order to get a matrix with fixed size
+        peak_amp_sub=np.zeros(30)*np.NaN
+        
+
+        for wfm in dataX:  #index (idx) is added to each element (wfm) in data, starting at 0 
+            zero_crossings = np.where(np.diff(np.sign(wfm+trigger)))[0] #Finds index, where sign wfm + index changes from positive to negative or vice versa 
+            #[0::2] means even indexed zero crossing (0,2,4,...), begin of window 
+            max_loc = [z1 + np.argmin(wfm[z1:z2+1]) for z1,z2 in zip(zero_crossings[0::2],zero_crossings[1::2])]  
+            peak_loc_sub[0:len(max_loc)]=max_loc
+            peak_amp_sub[0:len(max_loc)]=wfm[max_loc]
+            peak_loc.append(peak_loc_sub)
+            peak_amp.append(peak_amp_sub)
+            #peak_num.append(len(max_loc))
+
+        arrai= np.array(peak_loc, peak_amp)
+        return arrai
+        
+
+
     def getWFM(self,dataX, channel):
         dx=np.array(dataX)
         if self.settings.save_wfm_nbr[channel]>0:
@@ -346,6 +384,8 @@ class daq(QThread):
                     self.save(channel+"_"+"avg",self.avg[channel])
                 if self.settings.save_fft[channel]:
                     self.save(channel+"_"+"fft",self.fft[channel])
+                if channel=="A": # save forced identification of pulses
+                    self.save(channel+"_"+"pulses",self.pulses[channel])
         
         # TODO: check if needed
         #self.save("IndisposedTimes", self.indisposedTimes)
