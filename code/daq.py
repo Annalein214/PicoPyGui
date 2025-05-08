@@ -83,7 +83,7 @@ class daq(QThread):
             self._progress = float(self.endtime-self.startthread)/(self.settings.measurementduration*60)*100
         else:
             # since the measurement is reset every hour use this value for the progress bar
-            self._progress = float(self.endtime-self.startthread)/(60*60)*100
+            self._progress = float(self.endtime-self.startthread)/(15*60)*100
         sys.stdout.write("\r \t %.2f %%" % (self._progress) ); sys.stdout.flush()
 
     def run(self):
@@ -150,7 +150,7 @@ class daq(QThread):
             # decided to keep it in the same thread, as there would be no improvement anyhow
             self.analysis(data)
 
-            if self.endtime - self.lastSaved > (60*60):
+            if self.endtime - self.lastSaved > (15*60):
                 self.out.info("Reset run after %d seconds"%(self.endtime - self.lastSaved)) 
                 #self.hourlyPlot.plotAll()
                 self.saveAll()

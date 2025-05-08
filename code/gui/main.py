@@ -95,7 +95,7 @@ class CentralWidget(MyGui.QWidget):
         self.saveLog.returnPressed.connect(self.saveLogger)
 
         label2=MyGui.QLabel()
-        label2.setText("Progress")
+        label2.setText("Progress (15min)")
         self.progress = MyGui.QProgressBar(self)
         self.progress.setGeometry(200, 80, 250, 20)
 
