@@ -281,8 +281,10 @@ class daq(QThread):
             peak_loc.append(peak_loc_sub)
             peak_amp.append(peak_amp_sub)
             #peak_num.append(len(max_loc))
-
-        arrai= np.array(peak_loc, peak_amp)
+            peak_loc_sub=np.zeros(30)*np.NaN # in order to get a matrix with fixed size
+            peak_amp_sub=np.zeros(30)*np.NaN
+        
+        arrai= np.array([peak_loc, peak_amp])
         return arrai
         
 
