@@ -6,15 +6,20 @@ This script can drive 2 HV devices right now
 
 // PIN setup
 int VmonPIN1 = A0; // Vmon
-int VmonPIN2 = A6; // Vmon
+int VmonPIN2 = A7; // Vmon
+int VmonPIN =VmonPIN1; // preselect 1
+
 int EnablePIN1 = 2; // Enable pin on digital pin 2
 int EnablePIN2 = 3; // Enable pin on digital pin 2
 
 // constants for voltage conversion
 float monCoeff1 = 607.9; // measured
-float monOffset1=-28.9;
+float monOffset1=-28.9;1
+
+float monCoeff = monCoeff1;
 float monCoeff2 = monCoeff1; // measured
 float monOffset2=-monOffset2;
+float monOffset=monOffset1;
 
 float hvAcc = 0.005; // from datasheet
 float arduinoAcc = 5000.0/1023.0 / 1000.0 ; // in V
