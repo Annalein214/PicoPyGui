@@ -1,6 +1,10 @@
 '''
 HV driven and read out with an arduino
+
+not yet adjusted for 2 HV devices. You need to choose manually here
 '''
+
+DEVICE=2 # 1 for HV, 2 for HV2
 
 import serial, sys, glob, traceback
 
@@ -15,9 +19,9 @@ class HV:
             return False
         # Note: cannot try because I rely on this failing for wrong ports
             
-        self.device.write(b'1')
+        self.device.write(b'%d'%DEVICE)
         raw = self.device.readline()
-        self.device.write(b'1')
+        self.device.write(b'%d'%DEVICE)
         raw = self.device.readline()
         string = str(raw, 'utf-8').strip()
 
