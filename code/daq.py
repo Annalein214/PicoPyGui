@@ -264,25 +264,28 @@ class daq(QThread):
 
         #Set Trigger
         trigger = 0.002 # needs to be the opposite sign of the real trigger value
-
+        mpn = 200 # not beautiful, but use a max number of pulses that can be saved with all information, for now
         #create lists 
         peak_loc=[] 
         peak_amp=[]
-        peak_loc_sub=np.zeros(30)*np.NaN # in order to get a matrix with fixed size
-        peak_amp_sub=np.zeros(30)*np.NaN
+        peak_loc_sub=np.zeros(mpn)*np.NaN # in order to get a matrix with fixed size
+        peak_amp_sub=np.zeros(mpn)*np.NaN
         
 
         for wfm in dataX:  #index (idx) is added to each element (wfm) in data, starting at 0 
             zero_crossings = np.where(np.diff(np.sign(wfm+trigger)))[0] #Finds index, where sign wfm + index changes from positive to negative or vice versa 
             #[0::2] means even indexed zero crossing (0,2,4,...), begin of window 
             max_loc = [z1 + np.argmin(wfm[z1:z2+1]) for z1,z2 in zip(zero_crossings[0::2],zero_crossings[1::2])]  
+            if len(max_loc)> mpn:
+            	self.log.error("Amount of pulses is too high: %d. Allowed number: %d. I shorten it for now. Fix it! " %(len(max_loc), mpn))
+            	max_loc = max_loc[0:mpn]
             peak_loc_sub[0:len(max_loc)]=max_loc
             peak_amp_sub[0:len(max_loc)]=wfm[max_loc]
             peak_loc.append(peak_loc_sub)
             peak_amp.append(peak_amp_sub)
             #peak_num.append(len(max_loc))
-            peak_loc_sub=np.zeros(30)*np.NaN # in order to get a matrix with fixed size
-            peak_amp_sub=np.zeros(30)*np.NaN
+            peak_loc_sub=np.zeros(mpn)*np.NaN # in order to get a matrix with fixed size
+            peak_amp_sub=np.zeros(mpn)*np.NaN
         
         arrai= np.array([peak_loc, peak_amp])
         return arrai

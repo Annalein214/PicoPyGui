@@ -187,10 +187,13 @@ class external(QThread):
         self.prepareAnalysis() # reset all variables
 
     def save(self, name, values):
-        filename=self.directory+"/"+name+"_"+str(self.rounds)+".npy"
-        np.save(filename, values)
-        self.out.info("Save %s to file %s"%(name, filename))
-
+        try:
+           filename=self.directory+"/"+name+"_"+str(self.rounds)+".npy"
+           np.save(filename, values)
+           self.out.info("Save %s to file %s"%(name, filename))
+        except Exception as e:
+           self.log.error("Saving %s did not work, finished with error %s" %(name, str(e)))
+   
     def deleteFile(self):
         self.log.info("Deleting log file %s" % self.directory)
         try:
