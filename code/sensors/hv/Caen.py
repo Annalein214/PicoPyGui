@@ -37,10 +37,25 @@ class HV:
         #self.device.close()
         return monVoltage, HVVoltage, HVError
        
+       
+    def readSwitch(self, nbr):
+    	if self.device==None:
+            return False
+        
+        self.device.write(b'%d'%nbr)
+        raw = self.device.readline()
+        self.device.write(b'%d'%nbr)
+        raw = self.device.readline()
+        string = str(raw, 'utf-8').strip()
+        
+        
+        
+        if not "SW-" in str(string):
+            raise RuntimeError(TAG+": Value not from Switch: %s" % raw)
 
     def initialise(self,):
         # start connection to device, used by test()
-        self.device=serial.Serial(str(self.port), 9600,timeout=3)
+        self.device=serial.Serial(str(self.port), 115200,timeout=3)
 
     def test(self, port):
         # tests a port and initializes it => stop once port found, otherwise wrong device will get initialized
