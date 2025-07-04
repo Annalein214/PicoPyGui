@@ -9,12 +9,22 @@ int VmonPIN1 = A0; // Vmon
 int VmonPIN2 = A7; // Vmon
 int VmonPIN =VmonPIN1; // preselect 1
 
+int MiniPIN = 4; // enable digital pin 4
+const int MAXPRESS = 14;
+unsigned long pressTimes[MAXPRESS];
+int head=0;
+int count=0;
+int laststate = 1;
+unsigned long lastDebounceTime =0;
+const unsigned long debounceDelay=100; // milliseconds
+int lastSentIndex=0;
+
 int EnablePIN1 = 2; // Enable pin on digital pin 2
 int EnablePIN2 = 3; // Enable pin on digital pin 2
 
 // constants for voltage conversion
 float monCoeff1 = 607.9; // measured
-float monOffset1=-28.9;1
+float monOffset1=-28.9;
 
 float monCoeff = monCoeff1;
 float monCoeff2 = monCoeff1; // measured
@@ -34,10 +44,14 @@ void setup(){
   pinMode(EnablePIN2, OUTPUT);
   digitalWrite(EnablePIN2, HIGH); // New: ensure being online, could also be used to switch on/off manually
 
+  pinMode(MiniPIN, INPUT);
+
   delay(500);
 }
 
 void sendValue(int devicenumber){
+
+     
 
     if (devicenumber == 1){
       VmonPIN=VmonPIN1;
@@ -63,11 +77,29 @@ void sendValue(int devicenumber){
     Serial.print(accuracy);
     Serial.print(" V");
     Serial.println("");
+
+    
   }
 
 // -------------------------------------------------------------------------
 
 void loop(){
+  bool state = digitalRead(MiniPIN);
+  unsigned long now = millis();
+
+  if (state == 0 && laststate == 1 && (now - lastDebounceTime)>debounceDelay){
+    lastDebounceTime = now;
+    pressTimes[head]=millis();
+    head = (head + 1) % MAXPRESS;
+    if (count < MAXPRESS) {
+      count++;
+    }
+    else{
+      lastSentIndex = (lastSentIndex +1)%MAXPRESS;
+    }
+
+  }
+  laststate = state;
 
   // check if new messages are incoming
   if (Serial.available() > 0){
@@ -78,6 +110,23 @@ void loop(){
       }
       else if (val == 2){
         sendValue(2);
+      }
+      else if (val == 3){
+        int unreadCount = (head - lastSentIndex + MAXPRESS)%MAXPRESS;
+        //int unreadCount = (head - count +i + MAXPRESS)% MAXPRESS;
+        Serial.print("Presses:");
+        Serial.print(unreadCount);
+        Serial.print(":");
+        Serial.print(count);
+        Serial.print(":");
+
+        for (int i =0; i<unreadCount; i++){
+          int index = (lastSentIndex+i)%MAXPRESS;
+          Serial.print(pressTimes[index]);
+          Serial.print(",");
+        }
+        Serial.println(".");
+        lastSentIndex=head;
       }
       delay(200);
   }  
