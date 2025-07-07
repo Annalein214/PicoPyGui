@@ -149,39 +149,39 @@ void loop(){
         sendValue(2);
       }
       else if (val == 3){
-        int unreadCount = (head - lastSentIndex + MAXPRESS)%MAXPRESS;
+        //int unreadCount = (head - lastSentIndex + MAXPRESS)%MAXPRESS;
         //int unreadCount = (head - count +i + MAXPRESS)% MAXPRESS;
         Serial.print("SW-MICRO:");
-        Serial.print(unreadCount);
-        Serial.print(":");
+        //Serial.print(unreadCount);
+        //Serial.print(":");
         Serial.print(count);
         Serial.print(":");
 
-        for (int i =0; i<unreadCount; i++){
-          int index = (lastSentIndex+i)%MAXPRESS;
+        for (int i =0; i<count; i++){
+          int index = (head-count+i+MAXPRESS)%MAXPRESS;
           Serial.print(pressTimes[index]);
           Serial.print(",");
         }
         Serial.println(".");
-        lastSentIndex=(lastSentIndex + unreadCount)%MAXPRESS;
+        //lastSentIndex=(lastSentIndex + unreadCount)%MAXPRESS;
       }
 
       else if (val == 4){
-        int unreadCount2 = (head2 - lastSentIndex2 + MAXPRESS)%MAXPRESS;
+        //int unreadCount2 = (head2 - lastSentIndex2 + MAXPRESS)%MAXPRESS;
         //int unreadCount = (head - count +i + MAXPRESS)% MAXPRESS;
         Serial.print("SW-MACRO:");
-        Serial.print(unreadCount2);
-        Serial.print(":");
+        //Serial.print(unreadCount2);
+        //Serial.print(":");
         Serial.print(count2);
         Serial.print(":");
 
-        for (int i =0; i<unreadCount2; i++){
-          int index2 = (lastSentIndex2+i)%MAXPRESS;
+        for (int i =0; i<count; i++){
+          int index2 = (head-count+i+MAXPRESS)%MAXPRESS;
           Serial.print(pressTimes2[index2]);
           Serial.print(",");
         }
         Serial.println(".");
-        lastSentIndex2=(lastSentIndex2 + unreadCount2)%MAXPRESS;
+        //lastSentIndex2=(lastSentIndex2 + unreadCount2)%MAXPRESS;
       }
       delay(200);
   }  
