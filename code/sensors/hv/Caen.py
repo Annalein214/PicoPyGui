@@ -39,19 +39,36 @@ class HV:
        
        
     def readSwitch(self, nbr):
-    	if self.device==None:
+    	# 3 for micro
+    	# 4 for macro
+    
+        if self.device==None:
             return False
         
+        # note: here only one attempt is allowed!
         self.device.write(b'%d'%nbr)
         raw = self.device.readline()
-        self.device.write(b'%d'%nbr)
-        raw = self.device.readline()
-        string = str(raw, 'utf-8').strip()
         
+        string = str(raw, 'utf-8').strip()  
+        if string=="":
+            self.device.write(b'%d'%nbr)
+            raw = self.device.readline()
         
-        
+            string = str(raw, 'utf-8').strip()  
+          
         if not "SW-" in str(string):
             raise RuntimeError(TAG+": Value not from Switch: %s" % raw)
+            
+        values=string.replace(".","").split(":")[-1]
+        vals = []
+        for v in vals:
+            try:
+               vv=float(v)
+               vals.append(vv)
+            except: 
+                print("not converting:", v)
+                #pass
+        return vals
 
     def initialise(self,):
         # start connection to device, used by test()
@@ -157,7 +174,9 @@ if __name__ == "__main__":
             print("WARN: "+str)
     log=log()
     t=HV(log)
-    print (t.readDevice())
+    #print (t.readDevice())
+    print(t.readSwitch(3))
+    print(t.readSwitch(4))
 
 
 

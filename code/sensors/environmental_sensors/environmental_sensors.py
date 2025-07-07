@@ -141,7 +141,7 @@ class EnvSensors:
 
     def initialise(self,):
         # start connection to device, used by test()
-        self.device=serial.Serial(str(self.port), 9600,timeout=2, write_timeout = 1)
+        self.device=serial.Serial(str(self.port), 115200,timeout=2, write_timeout = 1)
 
     def test(self, port, debug=False):
         # tests a port and initializes it => stop once port found, otherwise wrong device will get initialized

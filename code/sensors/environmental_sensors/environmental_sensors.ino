@@ -132,7 +132,7 @@ void sendDiodeValue(){
 
 void setup(){
   // *** start serial ********
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   // *** check screen ********
 

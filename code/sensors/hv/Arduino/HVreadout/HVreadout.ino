@@ -10,6 +10,7 @@ int VmonPIN2 = A7; // Vmon
 int VmonPIN =VmonPIN1; // preselect 1
 
 int MiniPIN = 4; // enable digital pin 4
+int MacroPIN = 6;
 const int MAXPRESS = 14;
 unsigned long pressTimes[MAXPRESS];
 int head=0;
@@ -18,6 +19,14 @@ int laststate = 1;
 unsigned long lastDebounceTime =0;
 const unsigned long debounceDelay=100; // milliseconds
 int lastSentIndex=0;
+
+unsigned long pressTimes2[MAXPRESS];
+int head2=0;
+int count2=0;
+int lastSentIndex2=0;
+int laststate2 = 1;
+unsigned long lastDebounceTime2 =0;
+
 
 int EnablePIN1 = 2; // Enable pin on digital pin 2
 int EnablePIN2 = 3; // Enable pin on digital pin 2
@@ -36,7 +45,7 @@ float arduinoAcc = 5000.0/1023.0 / 1000.0 ; // in V
 // -------------------------------------------------------------------------
 
 void setup(){
-  Serial.begin(9600);
+  Serial.begin(115200);
   
   pinMode(EnablePIN1, OUTPUT);
   digitalWrite(EnablePIN1, HIGH); // New: ensure being online, could also be used to switch on/off manually
@@ -45,6 +54,8 @@ void setup(){
   digitalWrite(EnablePIN2, HIGH); // New: ensure being online, could also be used to switch on/off manually
 
   pinMode(MiniPIN, INPUT);
+    pinMode(MacroPIN, INPUT);
+
 
   delay(500);
 }
@@ -84,6 +95,8 @@ void sendValue(int devicenumber){
 // -------------------------------------------------------------------------
 
 void loop(){
+
+  ///////////// 
   bool state = digitalRead(MiniPIN);
   unsigned long now = millis();
 
@@ -95,11 +108,35 @@ void loop(){
       count++;
     }
     else{
-      lastSentIndex = (lastSentIndex +1)%MAXPRESS;
+      if (lastSentIndex == head){
+         lastSentIndex = (lastSentIndex +1)%MAXPRESS;
+      }
     }
 
   }
   laststate = state;
+  
+  ///////////////////////////////////////////
+
+  bool state2 = digitalRead(MacroPIN);
+
+  if (state2 == 0 && laststate2 == 1 && (now - lastDebounceTime2)>debounceDelay){
+    lastDebounceTime2 = now;
+    pressTimes2[head2]=millis();
+    head2 = (head2 + 1) % MAXPRESS;
+    if (count2 < MAXPRESS) {
+      count2++;
+    }
+    else{
+      if (lastSentIndex2 == head2){
+         lastSentIndex2 = (lastSentIndex2 +1)%MAXPRESS;
+      }
+    }
+
+  }
+  laststate2 = state2;
+
+  ////////////////////////////////////////
 
   // check if new messages are incoming
   if (Serial.available() > 0){
@@ -114,7 +151,7 @@ void loop(){
       else if (val == 3){
         int unreadCount = (head - lastSentIndex + MAXPRESS)%MAXPRESS;
         //int unreadCount = (head - count +i + MAXPRESS)% MAXPRESS;
-        Serial.print("Presses:");
+        Serial.print("SW-MICRO:");
         Serial.print(unreadCount);
         Serial.print(":");
         Serial.print(count);
@@ -126,7 +163,25 @@ void loop(){
           Serial.print(",");
         }
         Serial.println(".");
-        lastSentIndex=head;
+        lastSentIndex=(lastSentIndex + unreadCount)%MAXPRESS;
+      }
+
+      else if (val == 4){
+        int unreadCount2 = (head2 - lastSentIndex2 + MAXPRESS)%MAXPRESS;
+        //int unreadCount = (head - count +i + MAXPRESS)% MAXPRESS;
+        Serial.print("SW-MACRO:");
+        Serial.print(unreadCount2);
+        Serial.print(":");
+        Serial.print(count2);
+        Serial.print(":");
+
+        for (int i =0; i<unreadCount2; i++){
+          int index2 = (lastSentIndex2+i)%MAXPRESS;
+          Serial.print(pressTimes2[index2]);
+          Serial.print(",");
+        }
+        Serial.println(".");
+        lastSentIndex2=(lastSentIndex2 + unreadCount2)%MAXPRESS;
       }
       delay(200);
   }  
